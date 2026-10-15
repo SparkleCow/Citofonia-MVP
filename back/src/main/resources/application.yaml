@@ -1,0 +1,7 @@
+spring:
+  application:
+    name: citofonia
+  profiles:
+    default: dev
+  jpa:
+    open-in-view: false

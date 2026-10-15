@@ -1,0 +1,26 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/citofonia
+    username: citofonia
+    password: citofonia_dev
+  jpa:
+    show-sql: true
+    hibernate:
+      ddl-auto: update
+  docker:
+    compose:
+      enabled: true
+
+app:
+  security:
+    jwt:
+      # Secreto SOLO para desarrollo. En prod se inyecta via variable de entorno JWT_SECRET.
+      secret: citofonia-dev-jwt-secret-key-1234567890-abcdefghijklmnop
+      expiration: 8h
+      issuer: citofonia-api
+    bootstrap:
+      # Cuenta inicial de administrador (solo se crea si admin-password no esta vacia).
+      admin-email: admin@citofonia.local
+      admin-first-name: Administrador
+      admin-last-name: Sistema
+      admin-password: Admin1234!
