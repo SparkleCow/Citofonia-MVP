@@ -30,12 +30,17 @@ public class OpenApiConfig {
 
                                 **Flujo de registro:**
                                 1. Un administrador genera un codigo de invitacion en \
-                                `/api/admin/registration-codes`.
+                                `/api/admin/registration-codes/client` (rol USER) o \
+                                `/api/admin/registration-codes/security` (rol SECURITY).
                                 2. El administrador facilita el codigo al nuevo usuario.
-                                3. El usuario se registra en `/api/auth/register` con ese codigo. \
+                                3. El cliente se registra en `/api/auth/register` y el vigilante en \
+                                `/api/auth/register/security`, usando el codigo que corresponda. \
                                 La cuenta queda **deshabilitada**.
                                 4. Un administrador habilita la cuenta en \
                                 `/api/users/{id}/enable` para que pueda iniciar sesion.
+
+                                Un codigo de cliente no puede usarse en el registro de vigilante y \
+                                viceversa; tampoco existe registro para el rol ADMIN.
                                 """)
                         .version("0.0.1-SNAPSHOT")
                         .contact(new Contact().name("Citofonia").email("admin@citofonia.local")))

@@ -58,14 +58,14 @@ public class AuthController {
     }
 
     @Operation(
-            summary = "Autoregistro con codigo de invitacion",
-            description = "Crea una cuenta nueva usando un codigo generado por un administrador. "
-                    + "La cuenta se crea deshabilitada: un administrador debe habilitarla en "
-                    + "`/api/users/{id}/enable` antes de poder iniciar sesion.")
+            summary = "Autoregistro de cliente con codigo de invitacion",
+            description = "Crea una cuenta de **cliente** (rol USER) usando un codigo de rol USER "
+                    + "generado por un administrador. La cuenta se crea deshabilitada: un administrador "
+                    + "debe habilitarla en `/api/users/{id}/enable` antes de poder iniciar sesion.")
     @ApiResponses({
             @ApiResponse(responseCode = "201", description = "Usuario registrado (pendiente de habilitacion)",
                     content = @Content(schema = @Schema(implementation = UserResponse.class))),
-            @ApiResponse(responseCode = "400", description = "Codigo de registro invalido, expirado o usado",
+            @ApiResponse(responseCode = "400", description = "Codigo de registro invalido, expirado, usado o de otro tipo",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
             @ApiResponse(responseCode = "409", description = "El email ya esta registrado",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
@@ -75,6 +75,26 @@ public class AuthController {
     @ResponseStatus(HttpStatus.CREATED)
     public UserResponse register(@Valid @RequestBody RegisterRequest request) {
         return authService.register(request);
+    }
+
+    @Operation(
+            summary = "Autoregistro de vigilante/seguridad con codigo de invitacion",
+            description = "Crea una cuenta de **vigilante** (rol SECURITY) usando un codigo de rol SECURITY "
+                    + "generado por un administrador. La cuenta se crea deshabilitada: un administrador "
+                    + "debe habilitarla en `/api/users/{id}/enable` antes de poder iniciar sesion.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "201", description = "Vigilante registrado (pendiente de habilitacion)",
+                    content = @Content(schema = @Schema(implementation = UserResponse.class))),
+            @ApiResponse(responseCode = "400", description = "Codigo de registro invalido, expirado, usado o de otro tipo",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "409", description = "El email ya esta registrado",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "422", description = "Errores de validacion",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class)))})
+    @PostMapping("/register/security")
+    @ResponseStatus(HttpStatus.CREATED)
+    public UserResponse registerSecurity(@Valid @RequestBody RegisterRequest request) {
+        return authService.registerSecurity(request);
     }
 
     @Operation(

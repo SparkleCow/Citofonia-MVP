@@ -23,4 +23,13 @@ public enum RoleName {
     public String getAuthority() {
         return authority;
     }
+
+    /**
+     * Indica si el rol puede obtenerse mediante un codigo de invitacion.
+     * {@code ADMIN} queda excluido: solo se crea por bootstrap o por otro
+     * administrador.
+     */
+    public boolean isRegistrable() {
+        return this == USER || this == SECURITY;
+    }
 }

@@ -27,6 +27,12 @@ public record UserResponse(
         @Schema(description = "Roles asignados", example = "[\"USER\"]")
         Set<RoleName> roles,
 
+        @Schema(description = "Id del apartamento vinculado (null si no tiene)", example = "3")
+        Long apartmentId,
+
+        @Schema(description = "Identificador del apartamento vinculado (null si no tiene)", example = "A-101")
+        String apartmentIdentifier,
+
         @Schema(description = "Indica si la cuenta esta habilitada para iniciar sesion", example = "false")
         boolean enabled,
 
@@ -46,6 +52,8 @@ public record UserResponse(
                 user.getLastName(),
                 user.getEmail(),
                 user.getRoles().stream().map(role -> role.getName()).collect(java.util.stream.Collectors.toSet()),
+                user.getApartment() != null ? user.getApartment().getId() : null,
+                user.getApartment() != null ? user.getApartment().getIdentifier() : null,
                 user.isEnabled(),
                 user.isDeleted(),
                 user.getCreatedAt(),

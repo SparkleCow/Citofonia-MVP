@@ -62,17 +62,39 @@ public class AuthService {
     }
 
     /**
-     * Registra una cuenta nueva a partir de un codigo de invitacion.
+     * Registra una cuenta de <strong>cliente</strong> a partir de un codigo de
+     * invitacion de rol {@code USER}.
      *
      * <p>La cuenta se crea <strong>deshabilitada</strong>: un administrador
      * debera habilitarla antes de que pueda iniciar sesion. El codigo se
      * consume de forma atomica (un solo uso).</p>
      *
-     * @throws BadRequestException si el codigo es invalido, expirado o ya usado.
+     * @throws BadRequestException si el codigo es invalido, expirado, ya usado
+     *         o no corresponde a un codigo de cliente.
      * @throws ConflictException si el email ya esta registrado.
      */
     @Transactional
     public UserResponse register(RegisterRequest request) {
+        return register(request, RoleName.USER);
+    }
+
+    /**
+     * Registra una cuenta de <strong>vigilante/seguridad</strong> a partir de un
+     * codigo de invitacion de rol {@code SECURITY}.
+     *
+     * <p>La cuenta se crea <strong>deshabilitada</strong> hasta que un
+     * administrador la habilite.</p>
+     *
+     * @throws BadRequestException si el codigo es invalido, expirado, ya usado
+     *         o no corresponde a un codigo de vigilante.
+     * @throws ConflictException si el email ya esta registrado.
+     */
+    @Transactional
+    public UserResponse registerSecurity(RegisterRequest request) {
+        return register(request, RoleName.SECURITY);
+    }
+
+    private UserResponse register(RegisterRequest request, RoleName targetRole) {
         if (userRepository.existsByEmail(request.email())) {
             throw new ConflictException("El email ya esta registrado");
         }
@@ -83,17 +105,19 @@ public class AuthService {
                 request.email().trim().toLowerCase(),
                 passwordEncoder.encode(request.password()),
                 false);
-        user.getRoles().add(resolveRole(RoleName.USER));
+        user.getRoles().add(resolveRole(targetRole));
         User saved = userRepository.save(user);
 
         int consumed = registrationCodeRepository.consumeCode(
-                request.registrationCode().trim().toUpperCase(), saved, Instant.now());
+                request.registrationCode().trim().toUpperCase(), saved, Instant.now(), targetRole);
         if (consumed == 0) {
             // Lanza excepcion para revertir la transaccion completa del registro.
-            throw new BadRequestException("El codigo de registro es invalido, esta expirado o ya fue utilizado");
+            throw new BadRequestException(
+                    "El codigo de registro es invalido, esta expirado, ya fue utilizado "
+                            + "o no corresponde al tipo de registro solicitado");
         }
 
-        log.info("Nuevo usuario registrado (pendiente de habilitacion): {}", saved.getEmail());
+        log.info("Nuevo {} registrado (pendiente de habilitacion): {}", targetRole, saved.getEmail());
         return UserResponse.from(saved);
     }
 

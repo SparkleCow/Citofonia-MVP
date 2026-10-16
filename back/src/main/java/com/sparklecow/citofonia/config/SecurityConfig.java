@@ -52,7 +52,8 @@ public class SecurityConfig {
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         // Endpoints publicos
-                        .requestMatchers("/api/auth/login", "/api/auth/register").permitAll()
+                        .requestMatchers("/api/auth/login").permitAll()
+                        .requestMatchers("/api/auth/register", "/api/auth/register/**").permitAll()
                         .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
                         .requestMatchers("/error").permitAll()
                         // Gestion de usuarios: exclusiva de administradores
@@ -60,6 +61,12 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.PUT, "/api/users/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.PATCH, "/api/users/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.DELETE, "/api/users/**").hasRole("ADMIN")
+                        // Escritura de apartamentos: exclusiva de administradores.
+                        // La lectura (GET) se autoriza via @PreAuthorize (ADMIN o SECURITY).
+                        .requestMatchers(HttpMethod.POST, "/api/apartments/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/api/apartments/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.PATCH, "/api/apartments/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/api/apartments/**").hasRole("ADMIN")
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .anyRequest().authenticated())
                 .authenticationProvider(authenticationProvider)

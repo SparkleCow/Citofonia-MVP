@@ -1,6 +1,7 @@
 package com.sparklecow.citofonia.user.controller;
 
 import com.sparklecow.citofonia.common.exception.ErrorResponse;
+import com.sparklecow.citofonia.user.dto.AssignApartmentRequest;
 import com.sparklecow.citofonia.user.dto.CreateUserRequest;
 import com.sparklecow.citofonia.user.dto.UpdateUserRequest;
 import com.sparklecow.citofonia.user.dto.UserResponse;
@@ -106,6 +107,23 @@ public class UserController {
     public UserResponse update(@Parameter(description = "Id del usuario") @PathVariable Long id,
                                @Valid @RequestBody UpdateUserRequest request) {
         return userService.update(id, request);
+    }
+
+    @Operation(
+            summary = "Asignar o desvincular apartamento",
+            description = "Vincula un usuario a un apartamento existente. Enviando `apartmentId` nulo, "
+                    + "se desvincula al usuario de toda unidad.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Usuario actualizado"),
+            @ApiResponse(responseCode = "404", description = "Usuario o apartamento no encontrado",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "403", description = "Requiere rol ADMIN",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class)))})
+    @PatchMapping("/{id}/apartment")
+    public UserResponse assignApartment(
+            @Parameter(description = "Id del usuario") @PathVariable Long id,
+            @RequestBody AssignApartmentRequest request) {
+        return userService.assignApartment(id, request.apartmentId());
     }
 
     @Operation(

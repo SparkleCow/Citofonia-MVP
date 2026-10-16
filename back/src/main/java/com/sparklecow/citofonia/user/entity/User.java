@@ -1,11 +1,13 @@
 package com.sparklecow.citofonia.user.entity;
 
+import com.sparklecow.citofonia.apartment.entity.Apartment;
 import com.sparklecow.citofonia.common.entity.BaseEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToMany;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import java.util.Collection;
 import java.util.LinkedHashSet;
@@ -56,6 +58,15 @@ public class User extends BaseEntity implements UserDetails {
 
     @ManyToMany(fetch = FetchType.EAGER)
     private Set<Role> roles = new LinkedHashSet<>();
+
+    /**
+     * Apartamento al que esta vinculado el usuario (su vivienda). Puede ser
+     * {@code null} para cuentas sin unidad asignada (p. ej. administracion).
+     * Se carga de forma eager porque {@code open-in-view} esta deshabilitado.
+     */
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "apartment_id")
+    private Apartment apartment;
 
     public User(String firstName, String lastName, String email, String password, boolean enabled) {
         this.firstName = firstName;

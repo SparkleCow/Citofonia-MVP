@@ -25,6 +25,9 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     Page<User> findAllByDeletedFalse(Pageable pageable);
 
+    /** Residentes activos de un apartamento. */
+    List<User> findAllByApartmentIdAndDeletedFalse(Long apartmentId);
+
     @Query("SELECT COUNT(u) > 0 FROM User u WHERE u.email = :email AND u.deleted = false")
     boolean existsActiveByEmail(@Param("email") String email);
 }

@@ -1,8 +1,11 @@
 package com.sparklecow.citofonia.user.entity;
 
 import com.sparklecow.citofonia.common.entity.BaseEntity;
+import com.sparklecow.citofonia.user.enums.RoleName;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
@@ -18,7 +21,9 @@ import lombok.Setter;
  *
  * <p>Un administrador genera el codigo en el backend y se lo facilita al nuevo
  * usuario. El codigo se consume en el primer registro exitoso y expira a los
- * 7 dias.</p>
+ * 7 dias. Cada codigo esta asociado a un rol objetivo: {@code USER} para
+ * clientes o {@code SECURITY} para personal de vigilancia, de forma que un
+ * codigo de cliente no puede usarse para registrarse como vigilante.</p>
  */
 @Entity
 @Table(name = "registration_codes")
@@ -30,6 +35,14 @@ public class RegistrationCode extends BaseEntity {
     /** Codigo alfanumerico de un solo uso. */
     @Column(nullable = false, unique = true, length = 32)
     private String code;
+
+    /**
+     * Rol que se asignara al usuario que consuma el codigo. Solo admite
+     * {@code USER} (cliente) o {@code SECURITY} (vigilante).
+     */
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 32, columnDefinition = "varchar(32) default 'USER'")
+    private RoleName targetRole;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "created_by_id", nullable = false)
@@ -47,8 +60,9 @@ public class RegistrationCode extends BaseEntity {
 
     private Instant usedAt;
 
-    public RegistrationCode(String code, User createdBy, Instant expiresAt) {
+    public RegistrationCode(String code, RoleName targetRole, User createdBy, Instant expiresAt) {
         this.code = code;
+        this.targetRole = targetRole;
         this.createdBy = createdBy;
         this.expiresAt = expiresAt;
         this.used = false;

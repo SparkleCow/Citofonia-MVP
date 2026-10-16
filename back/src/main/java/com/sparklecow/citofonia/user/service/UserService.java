@@ -1,5 +1,7 @@
 package com.sparklecow.citofonia.user.service;
 
+import com.sparklecow.citofonia.apartment.entity.Apartment;
+import com.sparklecow.citofonia.apartment.repository.ApartmentRepository;
 import com.sparklecow.citofonia.common.exception.BadRequestException;
 import com.sparklecow.citofonia.common.exception.ConflictException;
 import com.sparklecow.citofonia.common.exception.NotFoundException;
@@ -48,6 +50,7 @@ public class UserService {
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
     private final RegistrationCodeRepository registrationCodeRepository;
+    private final ApartmentRepository apartmentRepository;
     private final PasswordEncoder passwordEncoder;
 
     /** Listado paginado de usuarios activos (sin borrados logicamente). */
@@ -78,6 +81,9 @@ public class UserService {
                 passwordEncoder.encode(request.password()),
                 true);
         user.setRoles(resolveRoles(request.roles()));
+        if (request.apartmentId() != null) {
+            user.setApartment(findApartment(request.apartmentId()));
+        }
         User saved = userRepository.save(user);
         log.info("Usuario creado por administracion: {}", saved.getEmail());
         return UserResponse.from(saved);
@@ -96,6 +102,24 @@ public class UserService {
         if (request.roles() != null) {
             user.setRoles(resolveRoles(request.roles()));
         }
+        if (request.apartmentId() != null) {
+            user.setApartment(findApartment(request.apartmentId()));
+        }
+        return UserResponse.from(user);
+    }
+
+    /**
+     * Asigna o cambia el apartamento de un usuario. Si {@code apartmentId} es
+     * {@code null}, el usuario queda sin vivienda vinculada.
+     *
+     * @throws NotFoundException si el usuario o el apartamento no existen.
+     */
+    @Transactional
+    public UserResponse assignApartment(Long id, Long apartmentId) {
+        User user = findActiveUser(id);
+        user.setApartment(apartmentId == null ? null : findApartment(apartmentId));
+        log.info("Usuario {} vinculado al apartamento {}", user.getEmail(),
+                apartmentId == null ? "ninguno" : apartmentId);
         return UserResponse.from(user);
     }
 
@@ -132,13 +156,25 @@ public class UserService {
         log.info("Usuario eliminado logicamente: {}", user.getEmail());
     }
 
-    /** Genera un nuevo codigo de invitacion de un solo uso y 7 dias de validez. */
+    /**
+     * Genera un nuevo codigo de invitacion de un solo uso y 7 dias de validez
+     * para el rol objetivo indicado (cliente {@code USER} o vigilante
+     * {@code SECURITY}).
+     *
+     * @throws BadRequestException si se intenta generar un codigo para
+     *         {@code ADMIN}, rol que nunca puede autoregistrarse.
+     */
     @Transactional
-    public RegistrationCodeResponse generateRegistrationCode(User admin) {
+    public RegistrationCodeResponse generateRegistrationCode(User admin, RoleName targetRole) {
+        if (targetRole == null || !targetRole.isRegistrable()) {
+            throw new BadRequestException(
+                    "Solo se pueden generar codigos para los roles USER (cliente) o SECURITY (vigilante)");
+        }
         RegistrationCode code = new RegistrationCode(
-                uniqueCode(), admin, Instant.now().plus(CODE_VALIDITY_DAYS, ChronoUnit.DAYS));
+                uniqueCode(), targetRole, admin, Instant.now().plus(CODE_VALIDITY_DAYS, ChronoUnit.DAYS));
         RegistrationCode saved = registrationCodeRepository.save(code);
-        log.info("Codigo de registro {} generado por {}", saved.getCode(), admin.getEmail());
+        log.info("Codigo de registro {} para rol {} generado por {}",
+                saved.getCode(), targetRole, admin.getEmail());
         return RegistrationCodeResponse.from(saved);
     }
 
@@ -154,6 +190,11 @@ public class UserService {
         return userRepository.findById(id)
                 .filter(user -> !user.isDeleted())
                 .orElseThrow(() -> new NotFoundException("Usuario no encontrado con id " + id));
+    }
+
+    private Apartment findApartment(Long apartmentId) {
+        return apartmentRepository.findByIdAndDeletedFalse(apartmentId)
+                .orElseThrow(() -> new NotFoundException("Apartamento no encontrado con id " + apartmentId));
     }
 
     private Set<Role> resolveRoles(Set<RoleName> roleNames) {

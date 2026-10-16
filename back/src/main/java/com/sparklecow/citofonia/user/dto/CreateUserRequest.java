@@ -38,5 +38,8 @@ public record CreateUserRequest(
 
         @NotEmpty(message = "Debe asignar al menos un rol")
         @Schema(description = "Roles asignados al usuario", example = "[\"USER\"]")
-        Set<RoleName> roles) {
+        Set<RoleName> roles,
+
+        @Schema(description = "Id del apartamento a vincular (opcional)", example = "3")
+        Long apartmentId) {
 }

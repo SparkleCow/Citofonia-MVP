@@ -1,6 +1,7 @@
 package com.sparklecow.citofonia.user.dto;
 
 import com.sparklecow.citofonia.user.entity.RegistrationCode;
+import com.sparklecow.citofonia.user.enums.RoleName;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.Instant;
 
@@ -15,6 +16,9 @@ public record RegistrationCodeResponse(
 
         @Schema(description = "Codigo a facilitar al nuevo usuario", example = "K7M2P9QX4T")
         String code,
+
+        @Schema(description = "Rol que se asignara al usuario que consuma el codigo", example = "USER")
+        RoleName role,
 
         @Schema(description = "Administrador que genero el codigo")
         String createdByEmail,
@@ -35,6 +39,7 @@ public record RegistrationCodeResponse(
         return new RegistrationCodeResponse(
                 code.getId(),
                 code.getCode(),
+                code.getTargetRole(),
                 code.getCreatedBy() != null ? code.getCreatedBy().getEmail() : null,
                 code.getCreatedAt(),
                 code.getExpiresAt(),
