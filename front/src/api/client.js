@@ -69,3 +69,7 @@ export const mailApi = {
   markAllRead: () => api('/api/mail/read-all', { method: 'POST' }),
   send: (payload) => api('/api/admin/mail', { method: 'POST', body: payload }),
 }
+
+export const callsApi = {
+  residents: () => api('/api/calls/residents'),
+}

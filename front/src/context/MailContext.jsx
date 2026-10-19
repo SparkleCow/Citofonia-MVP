@@ -1,6 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { mailApi } from '../api/client'
-import { connectMail, disconnectMail } from '../lib/ws'
+import {
+  closeRealtime,
+  ensureRealtimeConnection,
+  subscribeRealtime,
+} from '../lib/ws'
 import { useAuth } from './auth-context'
 import { MailContext } from './mail-context'
 
@@ -31,7 +35,7 @@ export function MailProvider({ children }) {
 
   useEffect(() => {
     if (!isAuthenticated) {
-      disconnectMail()
+      closeRealtime()
       ;(async () => {
         setStats(EMPTY_STATS)
         setLatest(null)
@@ -44,18 +48,18 @@ export function MailProvider({ children }) {
       await refresh()
     })()
 
-    connectMail({
-      onMail: (notification) => {
-        setLatest(notification)
-        setStats((prev) => ({ total: prev.total + 1, unread: notification.unread }))
-        setToast(notification)
-        if (toastTimer.current) clearTimeout(toastTimer.current)
-        toastTimer.current = setTimeout(() => setToast(null), 6000)
-      },
+    ensureRealtimeConnection()
+    const unsubscribe = subscribeRealtime('mailbox', (notification) => {
+      setLatest(notification)
+      setStats((prev) => ({ total: prev.total + 1, unread: notification.unread }))
+      setToast(notification)
+      if (toastTimer.current) clearTimeout(toastTimer.current)
+      toastTimer.current = setTimeout(() => setToast(null), 6000)
     })
 
     return () => {
-      disconnectMail()
+      unsubscribe()
+      closeRealtime()
       if (toastTimer.current) clearTimeout(toastTimer.current)
     }
   }, [isAuthenticated, refresh])

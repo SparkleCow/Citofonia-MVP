@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { notificationsApi } from '../../api/client'
 import { useAuth } from '../../context/auth-context'
+import { useCall } from '../../context/call-context'
 import { BellIcon, HomeIcon, PhoneIcon } from '../../components/icons'
 
 const ROLE_LABELS = {
@@ -17,6 +18,7 @@ const NOTIFICATION_LABELS = {
 
 export default function ResidentePage() {
   const { user } = useAuth()
+  const { startPortalCall, busy, call } = useCall()
   const [prefs, setPrefs] = useState(null)
 
   useEffect(() => {
@@ -67,8 +69,13 @@ export default function ResidentePage() {
           <span className="feature-icon">
             <PhoneIcon />
           </span>
-          <h3>Llamar al portal</h3>
-          <p>Abre la puerta principal desde tu movil avisando al vigilante de turno.</p>
+          <h3>Llamar a porteria</h3>
+          <p>Habla con el vigilante de turno desde tu movil, sin tener que bajar.</p>
+          <button type="button" className="btn btn-primary" disabled={busy} onClick={startPortalCall}>
+            <PhoneIcon />
+            Llamar a porteria
+          </button>
+          {call && <p className="muted">Llamada en curso con {call.peerName}.</p>}
         </div>
         <div className="feature-card">
           <span className="feature-icon">

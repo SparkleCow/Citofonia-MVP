@@ -33,6 +33,15 @@ public interface UserRepository extends JpaRepository<User, Long> {
     /** Residentes activos de un apartamento. */
     List<User> findAllByApartmentIdAndDeletedFalse(Long apartmentId);
 
+    /** Residentes con vivienda vinculada, ordenados por nombre (directorio de llamadas). */
+    @Query("""
+            SELECT u FROM User u JOIN u.roles r
+            WHERE r.name = com.sparklecow.citofonia.user.enums.RoleName.USER
+              AND u.deleted = false AND u.apartment IS NOT NULL
+            ORDER BY u.firstName, u.lastName
+            """)
+    List<User> findResidentsWithApartment();
+
     @Query("SELECT COUNT(u) > 0 FROM User u WHERE u.email = :email AND u.deleted = false")
     boolean existsActiveByEmail(@Param("email") String email);
 }
