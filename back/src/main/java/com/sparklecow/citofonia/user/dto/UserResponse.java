@@ -24,6 +24,12 @@ public record UserResponse(
         @Schema(description = "Email unico", example = "ana.garcia@ejemplo.com")
         String email,
 
+        @Schema(description = "Telefono de contacto (null si no tiene)", example = "+34600111222")
+        String phone,
+
+        @Schema(description = "Documento de identidad (null si no tiene)", example = "12345678A")
+        String documentNumber,
+
         @Schema(description = "Roles asignados", example = "[\"USER\"]")
         Set<RoleName> roles,
 
@@ -32,6 +38,13 @@ public record UserResponse(
 
         @Schema(description = "Identificador del apartamento vinculado (null si no tiene)", example = "A-101")
         String apartmentIdentifier,
+
+        @Schema(description = "true si es propietario de la vivienda, false si es inquilino "
+                + "(solo tiene significado con apartamento vinculado)", example = "true")
+        boolean owner,
+
+        @Schema(description = "true si reside actualmente en la vivienda", example = "true")
+        boolean occupiesApartment,
 
         @Schema(description = "Indica si la cuenta esta habilitada para iniciar sesion", example = "false")
         boolean enabled,
@@ -43,7 +56,16 @@ public record UserResponse(
         Instant createdAt,
 
         @Schema(description = "Ultima modificacion (null si nunca se modifico)")
-        Instant updatedAt) {
+        Instant updatedAt,
+
+        @Schema(description = "Email del usuario que creo la cuenta (null si autoregistro)")
+        String createdByEmail,
+
+        @Schema(description = "Email del ultimo usuario que modifico la cuenta")
+        String updatedByEmail,
+
+        @Schema(description = "Ultimo inicio de sesion (null si nunca inicio)")
+        Instant lastLoginAt) {
 
     public static UserResponse from(User user) {
         return new UserResponse(
@@ -51,12 +73,19 @@ public record UserResponse(
                 user.getFirstName(),
                 user.getLastName(),
                 user.getEmail(),
+                user.getPhone(),
+                user.getDocumentNumber(),
                 user.getRoles().stream().map(role -> role.getName()).collect(java.util.stream.Collectors.toSet()),
                 user.getApartment() != null ? user.getApartment().getId() : null,
                 user.getApartment() != null ? user.getApartment().getIdentifier() : null,
+                user.isOwner(),
+                user.isOccupiesApartment(),
                 user.isEnabled(),
                 user.isDeleted(),
                 user.getCreatedAt(),
-                user.getUpdatedAt());
+                user.getUpdatedAt(),
+                user.getCreatedByEmail(),
+                user.getUpdatedByEmail(),
+                user.getLastLoginAt());
     }
 }

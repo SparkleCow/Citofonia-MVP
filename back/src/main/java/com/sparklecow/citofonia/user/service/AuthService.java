@@ -1,9 +1,11 @@
 package com.sparklecow.citofonia.user.service;
 
+import com.sparklecow.citofonia.apartment.repository.ApartmentRepository;
 import com.sparklecow.citofonia.common.exception.BadRequestException;
 import com.sparklecow.citofonia.common.exception.ConflictException;
 import com.sparklecow.citofonia.common.exception.ForbiddenException;
 import com.sparklecow.citofonia.common.exception.UnauthorizedException;
+import com.sparklecow.citofonia.config.RegistrationProperties;
 import com.sparklecow.citofonia.security.JwtService;
 import com.sparklecow.citofonia.user.dto.JwtResponse;
 import com.sparklecow.citofonia.user.dto.LoginRequest;
@@ -12,7 +14,6 @@ import com.sparklecow.citofonia.user.dto.UserResponse;
 import com.sparklecow.citofonia.user.entity.Role;
 import com.sparklecow.citofonia.user.entity.User;
 import com.sparklecow.citofonia.user.enums.RoleName;
-import com.sparklecow.citofonia.user.repository.RegistrationCodeRepository;
 import com.sparklecow.citofonia.user.repository.RoleRepository;
 import com.sparklecow.citofonia.user.repository.UserRepository;
 import java.time.Instant;
@@ -30,7 +31,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * Servicio de autenticacion: inicio de sesion y autoregistro con codigo.
+ * Servicio de autenticacion: inicio de sesion y autoregistro de residentes
+ * con el codigo de registro fijo del edificio.
  */
 @Slf4j
 @Service
@@ -41,8 +43,9 @@ public class AuthService {
     private final JwtService jwtService;
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
-    private final RegistrationCodeRepository registrationCodeRepository;
     private final PasswordEncoder passwordEncoder;
+    private final RegistrationProperties registrationProperties;
+    private final ApartmentRepository apartmentRepository;
 
     /**
      * Autentica al usuario y emite un token JWT.
@@ -53,6 +56,8 @@ public class AuthService {
     public JwtResponse login(LoginRequest request) {
         Authentication authentication = authenticate(request.email(), request.password());
         User user = (User) authentication.getPrincipal();
+        user.setLastLoginAt(Instant.now());
+        userRepository.save(user);
         String token = jwtService.generateToken(user);
         List<String> roles = user.getRoles().stream()
                 .map(role -> role.getName().name())
@@ -62,41 +67,29 @@ public class AuthService {
     }
 
     /**
-     * Registra una cuenta de <strong>cliente</strong> a partir de un codigo de
-     * invitacion de rol {@code USER}.
+     * Registra una cuenta de <strong>residente</strong> (rol {@code USER})
+     * validando el codigo de registro fijo del edificio.
      *
      * <p>La cuenta se crea <strong>deshabilitada</strong>: un administrador
-     * debera habilitarla antes de que pueda iniciar sesion. El codigo se
-     * consume de forma atomica (un solo uso).</p>
+     * debera habilitarla antes de que pueda iniciar sesion. El residente
+     * selecciona su apartamento y si es propietario; la administracion
+     * valida los datos en la bandeja de pendientes.</p>
      *
-     * @throws BadRequestException si el codigo es invalido, expirado, ya usado
-     *         o no corresponde a un codigo de cliente.
+     * <p>Reglas de vivienda: solo los residentes pueden tener apartamento;
+     * un inquilino (no propietario) siempre reside en la vivienda, mientras
+     * que un propietario puede indicar que no reside en ella.</p>
+     *
+     * @throws BadRequestException si el codigo de registro no coincide o el
+     *         apartamento indicado no existe.
      * @throws ConflictException si el email ya esta registrado.
      */
     @Transactional
     public UserResponse register(RegisterRequest request) {
-        return register(request, RoleName.USER);
-    }
-
-    /**
-     * Registra una cuenta de <strong>vigilante/seguridad</strong> a partir de un
-     * codigo de invitacion de rol {@code SECURITY}.
-     *
-     * <p>La cuenta se crea <strong>deshabilitada</strong> hasta que un
-     * administrador la habilite.</p>
-     *
-     * @throws BadRequestException si el codigo es invalido, expirado, ya usado
-     *         o no corresponde a un codigo de vigilante.
-     * @throws ConflictException si el email ya esta registrado.
-     */
-    @Transactional
-    public UserResponse registerSecurity(RegisterRequest request) {
-        return register(request, RoleName.SECURITY);
-    }
-
-    private UserResponse register(RegisterRequest request, RoleName targetRole) {
-        if (userRepository.existsByEmail(request.email())) {
+        if (userRepository.existsByEmail(request.email().trim().toLowerCase())) {
             throw new ConflictException("El email ya esta registrado");
+        }
+        if (!isValidRegistrationCode(request.registrationCode())) {
+            throw new BadRequestException("El codigo de registro no es valido");
         }
 
         User user = new User(
@@ -105,20 +98,29 @@ public class AuthService {
                 request.email().trim().toLowerCase(),
                 passwordEncoder.encode(request.password()),
                 false);
-        user.getRoles().add(resolveRole(targetRole));
-        User saved = userRepository.save(user);
-
-        int consumed = registrationCodeRepository.consumeCode(
-                request.registrationCode().trim().toUpperCase(), saved, Instant.now(), targetRole);
-        if (consumed == 0) {
-            // Lanza excepcion para revertir la transaccion completa del registro.
-            throw new BadRequestException(
-                    "El codigo de registro es invalido, esta expirado, ya fue utilizado "
-                            + "o no corresponde al tipo de registro solicitado");
+        user.setPhone(request.phone().trim());
+        if (request.documentNumber() != null && !request.documentNumber().isBlank()) {
+            user.setDocumentNumber(request.documentNumber().trim().toUpperCase());
         }
 
-        log.info("Nuevo {} registrado (pendiente de habilitacion): {}", targetRole, saved.getEmail());
+        boolean owner = Boolean.TRUE.equals(request.owner());
+        boolean occupies = owner && Boolean.TRUE.equals(request.occupiesApartment());
+        user.setOwner(owner);
+        user.setOccupiesApartment(owner ? occupies : true);
+        if (request.apartmentId() != null) {
+            user.setApartment(apartmentRepository.findByIdAndDeletedFalse(request.apartmentId())
+                    .orElseThrow(() -> new BadRequestException("El apartamento seleccionado no existe")));
+        }
+
+        user.getRoles().add(resolveRole(RoleName.USER));
+        User saved = userRepository.save(user);
+
+        log.info("Nuevo residente registrado (pendiente de habilitacion): {}", saved.getEmail());
         return UserResponse.from(saved);
+    }
+
+    private boolean isValidRegistrationCode(String code) {
+        return registrationProperties.residentCode().equalsIgnoreCase(code.trim());
     }
 
     private Authentication authenticate(String email, String password) {

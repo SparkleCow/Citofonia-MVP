@@ -5,6 +5,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import java.util.Set;
 
@@ -30,6 +31,15 @@ public record CreateUserRequest(
         @Size(max = 160, message = "El email no puede superar 160 caracteres")
         @Schema(description = "Email unico usado como usuario", example = "carlos.ruiz@ejemplo.com")
         String email,
+
+        @Pattern(regexp = "^$|^[+0-9 ()-]{6,32}$",
+                message = "El telefono solo puede contener numeros, espacios, +, - o parentesis")
+        @Schema(description = "Telefono de contacto (opcional)", example = "+34600111222")
+        String phone,
+
+        @Size(max = 32, message = "El documento no puede superar 32 caracteres")
+        @Schema(description = "Documento de identidad (opcional, unico)", example = "12345678A")
+        String documentNumber,
 
         @NotBlank(message = "La contrasena es obligatoria")
         @Size(min = 8, max = 72, message = "La contrasena debe tener entre 8 y 72 caracteres")

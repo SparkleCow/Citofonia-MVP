@@ -29,18 +29,16 @@ public class OpenApiConfig {
                                 `Authorization: Bearer <token>`.
 
                                 **Flujo de registro:**
-                                1. Un administrador genera un codigo de invitacion en \
-                                `/api/admin/registration-codes/client` (rol USER) o \
-                                `/api/admin/registration-codes/security` (rol SECURITY).
-                                2. El administrador facilita el codigo al nuevo usuario.
-                                3. El cliente se registra en `/api/auth/register` y el vigilante en \
-                                `/api/auth/register/security`, usando el codigo que corresponda. \
-                                La cuenta queda **deshabilitada**.
-                                4. Un administrador habilita la cuenta en \
-                                `/api/users/{id}/enable` para que pueda iniciar sesion.
+                                1. Los **residentes** se registran en `/api/auth/register` con el \
+                                codigo de registro del edificio (unico, global y fijo). La cuenta \
+                                queda **deshabilitada** hasta que un administrador la active.
+                                2. El administrador crea cuentas de **vigilancia** (rol SECURITY) \
+                                directamente desde el panel de administracion via `POST /api/users`; \
+                                esas cuentas nacen habilitadas.
+                                3. Un administrador habilita cuentas pendientes en \
+                                `/api/users/{id}/enable` (listado en `/api/users/pending`).
 
-                                Un codigo de cliente no puede usarse en el registro de vigilante y \
-                                viceversa; tampoco existe registro para el rol ADMIN.
+                                No existe registro para el rol ADMIN.
                                 """)
                         .version("0.0.1-SNAPSHOT")
                         .contact(new Contact().name("Citofonia").email("admin@citofonia.local")))

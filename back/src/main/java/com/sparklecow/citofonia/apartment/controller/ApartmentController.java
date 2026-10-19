@@ -1,5 +1,6 @@
 package com.sparklecow.citofonia.apartment.controller;
 
+import com.sparklecow.citofonia.apartment.dto.ApartmentOptionResponse;
 import com.sparklecow.citofonia.apartment.dto.ApartmentRequest;
 import com.sparklecow.citofonia.apartment.dto.ApartmentResponse;
 import com.sparklecow.citofonia.apartment.dto.ApartmentResidentResponse;
@@ -49,6 +50,16 @@ import org.springframework.web.bind.annotation.RestController;
 public class ApartmentController {
 
     private final ApartmentService apartmentService;
+
+    @Operation(summary = "Opciones de apartamento para autoregistro",
+            description = "Listado publico (sin autenticacion) de unidades activas: id, identificador, "
+                    + "torre y piso. Pensado para el selector del formulario de registro de residentes.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Listado de unidades activas")})
+    @GetMapping("/options")
+    public List<ApartmentOptionResponse> options() {
+        return apartmentService.options();
+    }
 
     @Operation(
             summary = "Listar apartamentos con sus residentes",

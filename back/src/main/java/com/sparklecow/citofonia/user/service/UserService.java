@@ -6,21 +6,14 @@ import com.sparklecow.citofonia.common.exception.BadRequestException;
 import com.sparklecow.citofonia.common.exception.ConflictException;
 import com.sparklecow.citofonia.common.exception.NotFoundException;
 import com.sparklecow.citofonia.user.dto.CreateUserRequest;
-import com.sparklecow.citofonia.user.dto.RegistrationCodeResponse;
 import com.sparklecow.citofonia.user.dto.UpdateUserRequest;
 import com.sparklecow.citofonia.user.dto.UserResponse;
-import com.sparklecow.citofonia.user.entity.RegistrationCode;
 import com.sparklecow.citofonia.user.entity.Role;
 import com.sparklecow.citofonia.user.entity.User;
 import com.sparklecow.citofonia.user.enums.RoleName;
-import com.sparklecow.citofonia.user.repository.RegistrationCodeRepository;
 import com.sparklecow.citofonia.user.repository.RoleRepository;
 import com.sparklecow.citofonia.user.repository.UserRepository;
-import java.security.SecureRandom;
-import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 import java.util.LinkedHashSet;
-import java.util.List;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -31,25 +24,19 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * Servicio de gestion de usuarios y codigos de invitacion.
+ * Servicio de gestion de usuarios.
  *
  * <p>Todas las operaciones de borrado son logicas: la cuenta se marca como
- * eliminada y deshabilitada, pero sus datos se conservan en base de datos.</p>
+ * eliminada y deshabilitada, pero sus datos se conservan en base de datos.
+ * Toda escritura deja auditoria (quien realizo el cambio).</p>
  */
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class UserService {
 
-    /** Alfabeto sin caracteres ambiguos (0/O, 1/I/L) para facilitar el uso manual. */
-    private static final String CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-    private static final int CODE_LENGTH = 10;
-    private static final int CODE_VALIDITY_DAYS = 7;
-    private static final SecureRandom RANDOM = new SecureRandom();
-
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
-    private final RegistrationCodeRepository registrationCodeRepository;
     private final ApartmentRepository apartmentRepository;
     private final PasswordEncoder passwordEncoder;
 
@@ -59,6 +46,12 @@ public class UserService {
         return userRepository.findAllByDeletedFalse(pageable).map(UserResponse::from);
     }
 
+    /** Cuentas pendientes de habilitacion: creadas por autoregistro y aun deshabilitadas. */
+    @Transactional(readOnly = true)
+    public Page<UserResponse> listPending(Pageable pageable) {
+        return userRepository.findAllByDeletedFalseAndEnabledFalse(pageable).map(UserResponse::from);
+    }
+
     /** Detalle de un usuario activo por id. */
     @Transactional(readOnly = true)
     public UserResponse getById(Long id) {
@@ -66,13 +59,17 @@ public class UserService {
     }
 
     /**
-     * Creacion directa de un usuario por administracion.
+     * Creacion directa de un usuario de vigilancia por administracion.
      * La cuenta nace habilitada porque el administrador ya realizo la verificacion.
      */
     @Transactional
-    public UserResponse create(CreateUserRequest request) {
-        if (userRepository.existsByEmail(request.email())) {
+    public UserResponse create(CreateUserRequest request, User actor) {
+        if (userRepository.existsByEmail(request.email().trim().toLowerCase())) {
             throw new ConflictException("El email ya esta registrado");
+        }
+        if (request.documentNumber() != null && !request.documentNumber().isBlank()
+                && userRepository.existsByDocumentNumberIgnoreCase(request.documentNumber().trim())) {
+            throw new ConflictException("El documento de identidad ya esta registrado");
         }
         User user = new User(
                 request.firstName().trim(),
@@ -80,18 +77,27 @@ public class UserService {
                 request.email().trim().toLowerCase(),
                 passwordEncoder.encode(request.password()),
                 true);
+        if (request.phone() != null && !request.phone().isBlank()) {
+            user.setPhone(request.phone().trim());
+        }
+        if (request.documentNumber() != null && !request.documentNumber().isBlank()) {
+            user.setDocumentNumber(request.documentNumber().trim().toUpperCase());
+        }
         user.setRoles(resolveRoles(request.roles()));
         if (request.apartmentId() != null) {
+            requireResidentRole(user);
             user.setApartment(findApartment(request.apartmentId()));
         }
+        user.setCreatedByEmail(actor.getEmail());
+        user.setUpdatedByEmail(actor.getEmail());
         User saved = userRepository.save(user);
-        log.info("Usuario creado por administracion: {}", saved.getEmail());
+        log.info("Usuario creado por administracion {} ({})", saved.getEmail(), actor.getEmail());
         return UserResponse.from(saved);
     }
 
-    /** Actualiza nombre, apellido y/o roles de un usuario. */
+    /** Actualiza nombre, apellido, telefono, documento y/o roles de un usuario. */
     @Transactional
-    public UserResponse update(Long id, UpdateUserRequest request) {
+    public UserResponse update(Long id, UpdateUserRequest request, User actor) {
         User user = findActiveUser(id);
         if (request.firstName() != null && !request.firstName().isBlank()) {
             user.setFirstName(request.firstName().trim());
@@ -99,91 +105,103 @@ public class UserService {
         if (request.lastName() != null && !request.lastName().isBlank()) {
             user.setLastName(request.lastName().trim());
         }
+        if (request.phone() != null) {
+            user.setPhone(request.phone().isBlank() ? null : request.phone().trim());
+        }
+        if (request.documentNumber() != null && !request.documentNumber().isBlank()) {
+            String document = request.documentNumber().trim().toUpperCase();
+            if (!document.equalsIgnoreCase(user.getDocumentNumber())
+                    && userRepository.existsByDocumentNumberIgnoreCase(document)) {
+                throw new ConflictException("El documento de identidad ya esta registrado");
+            }
+            user.setDocumentNumber(document);
+        }
         if (request.roles() != null) {
             user.setRoles(resolveRoles(request.roles()));
+            if (!hasResidentRole(user)) {
+                user.setApartment(null);
+                user.setOwner(false);
+                user.setOccupiesApartment(true);
+            }
         }
         if (request.apartmentId() != null) {
+            requireResidentRole(user);
             user.setApartment(findApartment(request.apartmentId()));
         }
+        if (request.owner() != null) {
+            user.setOwner(request.owner());
+        }
+        if (request.occupiesApartment() != null) {
+            user.setOccupiesApartment(request.occupiesApartment());
+        }
+        if (!user.isOwner()) {
+            user.setOccupiesApartment(true);
+        }
+        user.setUpdatedByEmail(actor.getEmail());
         return UserResponse.from(user);
     }
 
     /**
      * Asigna o cambia el apartamento de un usuario. Si {@code apartmentId} es
-     * {@code null}, el usuario queda sin vivienda vinculada.
+     * {@code null}, el usuario queda sin vivienda vinculada (y se reinician
+     * los indicadores de propietario/ocupa vivienda).
      *
+     * <p>Solo los residentes (rol {@code USER}) pueden tener vivienda.</p>
+     *
+     * @throws BadRequestException si el usuario no es residente.
      * @throws NotFoundException si el usuario o el apartamento no existen.
      */
     @Transactional
-    public UserResponse assignApartment(Long id, Long apartmentId) {
+    public UserResponse assignApartment(Long id, Long apartmentId, User actor) {
         User user = findActiveUser(id);
-        user.setApartment(apartmentId == null ? null : findApartment(apartmentId));
-        log.info("Usuario {} vinculado al apartamento {}", user.getEmail(),
-                apartmentId == null ? "ninguno" : apartmentId);
+        if (apartmentId == null) {
+            user.setApartment(null);
+            user.setOwner(false);
+            user.setOccupiesApartment(true);
+        } else {
+            requireResidentRole(user);
+            user.setApartment(findApartment(apartmentId));
+        }
+        user.setUpdatedByEmail(actor.getEmail());
+        log.info("Usuario {} vinculado al apartamento {} por {}",
+                user.getEmail(), apartmentId == null ? "ninguno" : apartmentId, actor.getEmail());
         return UserResponse.from(user);
     }
 
-    /** Habilita una cuenta para que su titular pueda iniciar sesion. */
+    /** Habilita una cuenta creada mediante autoregistro para que su titular pueda iniciar sesion. */
     @Transactional
-    public UserResponse enable(Long id) {
+    public UserResponse enable(Long id, User actor) {
         User user = findActiveUser(id);
         user.setEnabled(true);
-        log.info("Usuario habilitado: {}", user.getEmail());
+        user.setUpdatedByEmail(actor.getEmail());
+        log.info("Usuario habilitado por {}: {}", actor.getEmail(), user.getEmail());
         return UserResponse.from(user);
     }
 
     /** Deshabilita una cuenta sin poder volver a iniciar sesion. */
     @Transactional
-    public UserResponse disable(Long id) {
+    public UserResponse disable(Long id, User actor) {
         User user = findActiveUser(id);
         user.setEnabled(false);
-        log.info("Usuario deshabilitado: {}", user.getEmail());
+        user.setUpdatedByEmail(actor.getEmail());
+        log.info("Usuario deshabilitado por {}: {}", actor.getEmail(), user.getEmail());
         return UserResponse.from(user);
     }
 
     /**
      * Borrado logico de un usuario: se marca como eliminado y deshabilitado.
-     * No se permite la autore elimincacion del administrador en sesion.
+     * No se permite la autoreliminacion del administrador en sesion.
      */
     @Transactional
-    public void delete(Long id, Long currentUserId) {
-        if (id.equals(currentUserId)) {
+    public void delete(Long id, User actor) {
+        if (id.equals(actor.getId())) {
             throw new BadRequestException("No puede eliminarse a si mismo");
         }
         User user = findActiveUser(id);
         user.setDeleted(true);
         user.setEnabled(false);
-        log.info("Usuario eliminado logicamente: {}", user.getEmail());
-    }
-
-    /**
-     * Genera un nuevo codigo de invitacion de un solo uso y 7 dias de validez
-     * para el rol objetivo indicado (cliente {@code USER} o vigilante
-     * {@code SECURITY}).
-     *
-     * @throws BadRequestException si se intenta generar un codigo para
-     *         {@code ADMIN}, rol que nunca puede autoregistrarse.
-     */
-    @Transactional
-    public RegistrationCodeResponse generateRegistrationCode(User admin, RoleName targetRole) {
-        if (targetRole == null || !targetRole.isRegistrable()) {
-            throw new BadRequestException(
-                    "Solo se pueden generar codigos para los roles USER (cliente) o SECURITY (vigilante)");
-        }
-        RegistrationCode code = new RegistrationCode(
-                uniqueCode(), targetRole, admin, Instant.now().plus(CODE_VALIDITY_DAYS, ChronoUnit.DAYS));
-        RegistrationCode saved = registrationCodeRepository.save(code);
-        log.info("Codigo de registro {} para rol {} generado por {}",
-                saved.getCode(), targetRole, admin.getEmail());
-        return RegistrationCodeResponse.from(saved);
-    }
-
-    /** Codigos de registro vigentes: sin usar y no expirados. */
-    @Transactional(readOnly = true)
-    public List<RegistrationCodeResponse> listRegistrationCodes() {
-        return registrationCodeRepository.findByUsedFalseAndExpiresAtAfter(Instant.now()).stream()
-                .map(RegistrationCodeResponse::from)
-                .toList();
+        user.setUpdatedByEmail(actor.getEmail());
+        log.info("Usuario eliminado logicamente por {}: {}", actor.getEmail(), user.getEmail());
     }
 
     private User findActiveUser(Long id) {
@@ -197,6 +215,22 @@ public class UserService {
                 .orElseThrow(() -> new NotFoundException("Apartamento no encontrado con id " + apartmentId));
     }
 
+    private boolean hasResidentRole(User user) {
+        return user.getRoles().stream().anyMatch(role -> role.getName() == RoleName.USER);
+    }
+
+    /**
+     * Solo los usuarios con rol {@code USER} (residentes) pueden tener un
+     * apartamento vinculado; administracion y vigilancia no tienen vivienda.
+     *
+     * @throws BadRequestException si el usuario no tiene el rol residente.
+     */
+    private void requireResidentRole(User user) {
+        if (!hasResidentRole(user)) {
+            throw new BadRequestException("Solo los residentes pueden tener apartamento vinculado");
+        }
+    }
+
     private Set<Role> resolveRoles(Set<RoleName> roleNames) {
         Set<Role> roles = new LinkedHashSet<>();
         for (RoleName roleName : roleNames) {
@@ -204,21 +238,5 @@ public class UserService {
                     .orElseThrow(() -> new IllegalStateException("Rol no encontrado: " + roleName)));
         }
         return roles;
-    }
-
-    private String uniqueCode() {
-        String code;
-        do {
-            code = randomCode();
-        } while (registrationCodeRepository.existsByCode(code));
-        return code;
-    }
-
-    private String randomCode() {
-        StringBuilder builder = new StringBuilder(CODE_LENGTH);
-        for (int i = 0; i < CODE_LENGTH; i++) {
-            builder.append(CODE_ALPHABET.charAt(RANDOM.nextInt(CODE_ALPHABET.length())));
-        }
-        return builder.toString();
     }
 }

@@ -1,0 +1,159 @@
+/* =========================================================
+   Citofonia - tokens de diseño
+   Toda la UI consume estas variables: no hay colores fijos
+   en los componentes, asi el modo claro/oscuro siempre cuadra.
+   ========================================================= */
+:root {
+  color-scheme: light;
+
+  /* superficies */
+  --bg: #f4f5fa;
+  --surface: #ffffff;
+  --surface-2: #f7f8fc;
+  --surface-3: #eef0f7;
+  --field-bg: #ffffff;
+
+  /* texto */
+  --text: #51596b;
+  --text-muted: #7a8296;
+  --text-h: #131722;
+
+  /* bordes */
+  --border: #e3e6ef;
+  --border-strong: #cfd4e2;
+
+  /* acento */
+  --accent: #4f46e5;
+  --accent-hover: #4338ca;
+  --accent-contrast: #ffffff;
+  --accent-soft: rgba(79, 70, 229, 0.1);
+  --accent-border: rgba(79, 70, 229, 0.42);
+
+  /* estados */
+  --danger: #d14343;
+  --danger-soft: #fdf0f0;
+  --danger-border: #f3c9c9;
+  --success: #1e8e4e;
+  --success-soft: #eefaf2;
+  --success-border: #bfe9cf;
+  --warning: #a35b06;
+  --warning-soft: #fdf5e7;
+  --warning-border: #f0dcb4;
+
+  /* miscelanea */
+  --placeholder: #98a0b3;
+  --focus-ring: rgba(79, 70, 229, 0.35);
+  --overlay: rgba(19, 23, 34, 0.45);
+  --shadow-sm: 0 1px 2px rgba(16, 20, 35, 0.06);
+  --shadow: 0 12px 30px -8px rgba(16, 20, 35, 0.16), 0 4px 10px -4px rgba(16, 20, 35, 0.08);
+
+  --sans: system-ui, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+  --radius: 12px;
+  --radius-sm: 9px;
+
+  font-family: var(--sans);
+  font-size: 16px;
+  line-height: 1.55;
+  color: var(--text);
+  background: var(--bg);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+
+    --bg: #0e1017;
+    --surface: #171a23;
+    --surface-2: #1d202b;
+    --surface-3: #232734;
+    --field-bg: #1d202b;
+
+    --text: #aeb6c9;
+    --text-muted: #8b93a8;
+    --text-h: #f1f3f8;
+
+    --border: #272b38;
+    --border-strong: #363c4d;
+
+    --accent: #7c85f7;
+    --accent-hover: #9097ff;
+    --accent-contrast: #0e1017;
+    --accent-soft: rgba(124, 133, 247, 0.16);
+    --accent-border: rgba(124, 133, 247, 0.5);
+
+    --danger: #f38a8a;
+    --danger-soft: rgba(243, 138, 138, 0.14);
+    --danger-border: rgba(243, 138, 138, 0.45);
+    --success: #6ddc9a;
+    --success-soft: rgba(109, 220, 154, 0.14);
+    --success-border: rgba(109, 220, 154, 0.42);
+    --warning: #e8b264;
+    --warning-soft: rgba(232, 178, 100, 0.14);
+    --warning-border: rgba(232, 178, 100, 0.42);
+
+    --placeholder: #6e7791;
+    --focus-ring: rgba(124, 133, 247, 0.45);
+    --overlay: rgba(4, 6, 12, 0.6);
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+    --shadow: 0 14px 34px -10px rgba(0, 0, 0, 0.65), 0 4px 12px -6px rgba(0, 0, 0, 0.4);
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: var(--bg);
+  color: var(--text);
+}
+
+h1,
+h2,
+h3 {
+  font-weight: 650;
+  color: var(--text-h);
+  line-height: 1.25;
+}
+
+a {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+::selection {
+  background: var(--accent-soft);
+  color: var(--text-h);
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Placeholders siempre visibles en ambos temas */
+input::placeholder,
+textarea::placeholder {
+  color: var(--placeholder);
+  opacity: 1;
+}
+
+/* El navegador pinta los autofill en blanco: lo neutralizamos */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus {
+  -webkit-text-fill-color: var(--text-h);
+  -webkit-box-shadow: 0 0 0 1000px var(--field-bg) inset;
+  caret-color: var(--text-h);
+  transition: background-color 9999s ease-out;
+}

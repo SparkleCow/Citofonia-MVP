@@ -63,6 +63,22 @@ public class UserController {
         return new PagedModel<>(page);
     }
 
+    @Operation(
+            summary = "Listar cuentas pendientes de habilitacion",
+            description = "Devuelve las cuentas creadas mediante autoregistro que aun estan deshabilitadas "
+                    + "y esperan ser activadas por un administrador.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Listado paginado de pendientes"),
+            @ApiResponse(responseCode = "403", description = "Requiere rol ADMIN",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class)))})
+    @GetMapping("/pending")
+    public PagedModel<UserResponse> listPending(
+            @Parameter(description = "Paginacion (page, size, sort)")
+            @PageableDefault(size = 20) Pageable pageable) {
+        Page<UserResponse> page = userService.listPending(pageable);
+        return new PagedModel<>(page);
+    }
+
     @Operation(summary = "Detalle de un usuario", description = "Devuelve un usuario activo por su id.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Usuario encontrado"),
@@ -76,13 +92,13 @@ public class UserController {
     }
 
     @Operation(
-            summary = "Crear usuario",
-            description = "Crea un usuario directamente con roles asignados. La cuenta nace habilitada, "
-                    + "ya que la verificacion la realiza el propio administrador. "
-                    + "Para el flujo de autoregistro con invitacion use `/api/auth/register`.")
+            summary = "Crear usuario de vigilancia",
+            description = "Crea un usuario directamente con rol SECURITY. La cuenta nace "
+                    + "habilitada, ya que la verificacion la realiza el propio administrador. "
+                    + "Para el autoregistro de residentes use `/api/auth/register`.")
     @ApiResponses({
             @ApiResponse(responseCode = "201", description = "Usuario creado"),
-            @ApiResponse(responseCode = "409", description = "El email ya esta registrado",
+            @ApiResponse(responseCode = "409", description = "El email o documento ya esta registrado",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
             @ApiResponse(responseCode = "422", description = "Errores de validacion",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
@@ -90,14 +106,18 @@ public class UserController {
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class)))})
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public UserResponse create(@Valid @RequestBody CreateUserRequest request) {
-        return userService.create(request);
+    public UserResponse create(@Valid @RequestBody CreateUserRequest request,
+                               @AuthenticationPrincipal User currentUser) {
+        return userService.create(request, currentUser);
     }
 
-    @Operation(summary = "Actualizar usuario", description = "Actualiza nombre, apellido y/o roles de un usuario.")
+    @Operation(summary = "Actualizar usuario",
+            description = "Actualiza nombre, apellido, telefono, documento y/o roles de un usuario.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Usuario actualizado"),
             @ApiResponse(responseCode = "404", description = "Usuario no encontrado",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "409", description = "El documento ya esta registrado en otra cuenta",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
             @ApiResponse(responseCode = "422", description = "Errores de validacion",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
@@ -105,8 +125,9 @@ public class UserController {
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class)))})
     @PutMapping("/{id}")
     public UserResponse update(@Parameter(description = "Id del usuario") @PathVariable Long id,
-                               @Valid @RequestBody UpdateUserRequest request) {
-        return userService.update(id, request);
+                               @Valid @RequestBody UpdateUserRequest request,
+                               @AuthenticationPrincipal User currentUser) {
+        return userService.update(id, request, currentUser);
     }
 
     @Operation(
@@ -122,8 +143,9 @@ public class UserController {
     @PatchMapping("/{id}/apartment")
     public UserResponse assignApartment(
             @Parameter(description = "Id del usuario") @PathVariable Long id,
-            @RequestBody AssignApartmentRequest request) {
-        return userService.assignApartment(id, request.apartmentId());
+            @RequestBody AssignApartmentRequest request,
+            @AuthenticationPrincipal User currentUser) {
+        return userService.assignApartment(id, request.apartmentId(), currentUser);
     }
 
     @Operation(
@@ -136,8 +158,9 @@ public class UserController {
             @ApiResponse(responseCode = "403", description = "Requiere rol ADMIN",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class)))})
     @PatchMapping("/{id}/enable")
-    public UserResponse enable(@Parameter(description = "Id del usuario") @PathVariable Long id) {
-        return userService.enable(id);
+    public UserResponse enable(@Parameter(description = "Id del usuario") @PathVariable Long id,
+                               @AuthenticationPrincipal User currentUser) {
+        return userService.enable(id, currentUser);
     }
 
     @Operation(summary = "Deshabilitar usuario", description = "Impide que un usuario inicie sesion sin eliminarlo.")
@@ -148,8 +171,9 @@ public class UserController {
             @ApiResponse(responseCode = "403", description = "Requiere rol ADMIN",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class)))})
     @PatchMapping("/{id}/disable")
-    public UserResponse disable(@Parameter(description = "Id del usuario") @PathVariable Long id) {
-        return userService.disable(id);
+    public UserResponse disable(@Parameter(description = "Id del usuario") @PathVariable Long id,
+                                @AuthenticationPrincipal User currentUser) {
+        return userService.disable(id, currentUser);
     }
 
     @Operation(
@@ -168,6 +192,6 @@ public class UserController {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(@Parameter(description = "Id del usuario") @PathVariable Long id,
                        @AuthenticationPrincipal User currentUser) {
-        userService.delete(id, currentUser.getId());
+        userService.delete(id, currentUser);
     }
 }

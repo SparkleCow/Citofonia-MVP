@@ -1,5 +1,6 @@
 package com.sparklecow.citofonia.apartment.service;
 
+import com.sparklecow.citofonia.apartment.dto.ApartmentOptionResponse;
 import com.sparklecow.citofonia.apartment.dto.ApartmentRequest;
 import com.sparklecow.citofonia.apartment.dto.ApartmentResponse;
 import com.sparklecow.citofonia.apartment.dto.ApartmentResidentResponse;
@@ -36,6 +37,18 @@ public class ApartmentService {
     public Page<ApartmentResponse> list(Pageable pageable) {
         return apartmentRepository.findAllByDeletedFalse(pageable)
                 .map(this::toResponseWithResidents);
+    }
+
+    /**
+     * Listado ligero y <strong>publico</strong> de unidades activas para el
+     * formulario de autoregistro de residentes. Sin residentes ni notas.
+     */
+    @Transactional(readOnly = true)
+    public List<ApartmentOptionResponse> options() {
+        return apartmentRepository.findAllByDeletedFalse().stream()
+                .sorted((a, b) -> a.getIdentifier().compareToIgnoreCase(b.getIdentifier()))
+                .map(ApartmentOptionResponse::from)
+                .toList();
     }
 
     /** Detalle de un apartamento activo con sus residentes. */

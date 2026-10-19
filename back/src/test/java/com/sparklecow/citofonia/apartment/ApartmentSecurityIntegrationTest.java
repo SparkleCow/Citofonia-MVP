@@ -50,7 +50,8 @@ class ApartmentSecurityIntegrationTest {
                 .andExpect(jsonPath("$.identifier").value(identifier))
                 .andExpect(jsonPath("$.residentCount").value(0));
 
-        String listBody = mockMvc.perform(get("/api/apartments").header("Authorization", "Bearer " + adminToken))
+        String listBody = mockMvc.perform(get("/api/apartments?size=100")
+                        .header("Authorization", "Bearer " + adminToken))
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
         assertTrue(listBody.contains("\"" + identifier + "\""),
@@ -67,7 +68,7 @@ class ApartmentSecurityIntegrationTest {
         String securityEmail = uniqueEmail("vigilante");
         createUser(adminToken, securityEmail, "SECURITY");
         String securityToken = login(securityEmail);
-        String listBody = mockMvc.perform(get("/api/apartments")
+        String listBody = mockMvc.perform(get("/api/apartments?size=100")
                         .header("Authorization", "Bearer " + securityToken))
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();

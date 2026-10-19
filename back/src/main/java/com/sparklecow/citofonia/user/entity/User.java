@@ -9,6 +9,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToMany;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import java.time.Instant;
 import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.Set;
@@ -44,6 +45,14 @@ public class User extends BaseEntity implements UserDetails {
     @Column(nullable = false, unique = true, length = 160)
     private String email;
 
+    /** Telefono de contacto del usuario. */
+    @Column(length = 32)
+    private String phone;
+
+    /** Documento de identidad (DNI, cedula, pasaporte...). */
+    @Column(unique = true, length = 32)
+    private String documentNumber;
+
     /** Hash BCrypt de la contrasena. Nunca se expone en API. */
     @Column(nullable = false)
     private String password;
@@ -56,6 +65,17 @@ public class User extends BaseEntity implements UserDetails {
     @Column(nullable = false)
     private boolean deleted;
 
+    /** Auditoria: email del usuario que creo la cuenta. */
+    @Column(length = 160)
+    private String createdByEmail;
+
+    /** Auditoria: email del ultimo usuario que modifico la cuenta. */
+    @Column(length = 160)
+    private String updatedByEmail;
+
+    /** Ultimo inicio de sesion exitoso (null si nunca inicio sesion). */
+    private Instant lastLoginAt;
+
     @ManyToMany(fetch = FetchType.EAGER)
     private Set<Role> roles = new LinkedHashSet<>();
 
@@ -67,6 +87,21 @@ public class User extends BaseEntity implements UserDetails {
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "apartment_id")
     private Apartment apartment;
+
+    /**
+     * {@code true} si el usuario es propietario de la vivienda; {@code false}
+     * si es inquilino. Solo aplica a residentes con apartamento vinculado.
+     */
+    @Column(nullable = false)
+    private boolean owner;
+
+    /**
+     * {@code true} si el usuario reside actualmente en la vivienda. Los
+     * inquilinos siempre residen en ella; un propietario puede no residir
+     * (propietario ausente) y entonces solo recibe notificaciones generales.
+     */
+    @Column(nullable = false)
+    private boolean occupiesApartment = true;
 
     public User(String firstName, String lastName, String email, String password, boolean enabled) {
         this.firstName = firstName;

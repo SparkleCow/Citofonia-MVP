@@ -8,10 +8,10 @@ public enum RoleName {
     /** Acceso total: gestion de usuarios, codigos de registro y configuracion. */
     ADMIN("ROLE_ADMIN"),
 
-    /** Perfiles de seguridad: acceso operativo a consultas de usuarios. */
+    /** Personal de vigilancia/gerencia: panel operativo del edificio. */
     SECURITY("ROLE_SECURITY"),
 
-    /** rol por defecto de cualquier cuenta registrada. */
+    /** Residente (rol por defecto de cualquier cuenta registrada). */
     USER("ROLE_USER");
 
     private final String authority;
@@ -25,11 +25,11 @@ public enum RoleName {
     }
 
     /**
-     * Indica si el rol puede obtenerse mediante un codigo de invitacion.
-     * {@code ADMIN} queda excluido: solo se crea por bootstrap o por otro
-     * administrador.
+     * Indica si el rol puede obtenerse mediante el codigo de registro fijo
+     * de residentes. Solo {@code USER}: los demas roles los crea un
+     * administrador desde el panel de administracion.
      */
     public boolean isRegistrable() {
-        return this == USER || this == SECURITY;
+        return this == USER;
     }
 }

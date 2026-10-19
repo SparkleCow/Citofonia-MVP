@@ -25,6 +25,11 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     Page<User> findAllByDeletedFalse(Pageable pageable);
 
+    /** Cuentas creadas por autoregistro pendientes de habilitacion. */
+    Page<User> findAllByDeletedFalseAndEnabledFalse(Pageable pageable);
+
+    boolean existsByDocumentNumberIgnoreCase(String documentNumber);
+
     /** Residentes activos de un apartamento. */
     List<User> findAllByApartmentIdAndDeletedFalse(Long apartmentId);
 

@@ -51,9 +51,14 @@ public class SecurityConfig {
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
+                        // Preflight CORS: sin autenticacion (la resuelve WebConfig)
+                        .requestMatchers(HttpMethod.OPTIONS, "/api/**").permitAll()
                         // Endpoints publicos
                         .requestMatchers("/api/auth/login").permitAll()
                         .requestMatchers("/api/auth/register", "/api/auth/register/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/apartments/options").permitAll()
+                        // Handshake WebSocket: la autenticacion ocurre en el frame CONNECT (STOMP)
+                        .requestMatchers("/ws/**").permitAll()
                         .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
                         .requestMatchers("/error").permitAll()
                         // Gestion de usuarios: exclusiva de administradores

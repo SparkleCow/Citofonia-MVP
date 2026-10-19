@@ -12,6 +12,13 @@ spring:
       enabled: true
 
 app:
+  registration:
+    # Codigo UNICO y fijo para todos los residentes. No cambia con el tiempo.
+    resident-code: CITOFONIA-RESIDENTES
+  cors:
+    # DESARROLLO: todo abierto para evitar errores con cualquier puerto/origen.
+    # En prod se restringe a los origenes reales del frontend.
+    allowed-origins: "*"
   security:
     jwt:
       # Secreto SOLO para desarrollo. En prod se inyecta via variable de entorno JWT_SECRET.
