@@ -161,17 +161,17 @@ class SecurityFlowIntegrationTest {
         long apartmentId = ((Number) JsonPath.read(
                 optionsResult.getResponse().getContentAsString(), "$[0].id")).longValue();
 
-        // Vigilancia no puede llevar apartamento vinculado.
-        MvcResult securityResult = mockMvc.perform(post("/api/users")
+        // La consergeria no puede llevar apartamento vinculado.
+        MvcResult conciergeResult = mockMvc.perform(post("/api/users")
                         .header("Authorization", "Bearer " + adminToken)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"firstName":"Vigi","lastName":"Lante","email":"%s","password":"%s",
-                                 "roles":["SECURITY"],"apartmentId":%d}
-                                """.formatted(uniqueEmail("vigiconapto"), PASSWORD, apartmentId)))
+                                {"firstName":"Conserje","lastName":"Lante","email":"%s","password":"%s",
+                                 "roles":["CONCIERGE"],"apartmentId":%d}
+                                """.formatted(uniqueEmail("conserjeconapto"), PASSWORD, apartmentId)))
                 .andExpect(status().is4xxClientError())
                 .andReturn();
-        org.assertj.core.api.Assertions.assertThat(securityResult.getResponse().getContentAsString())
+        org.assertj.core.api.Assertions.assertThat(conciergeResult.getResponse().getContentAsString())
                 .contains("residentes");
     }
 
@@ -184,26 +184,26 @@ class SecurityFlowIntegrationTest {
     }
 
     @Test
-    void adminCreatesSecurityUsersDirectly() throws Exception {
+    void adminCreatesConciergeUsersDirectly() throws Exception {
         String adminToken = loginAdmin();
 
-        MvcResult securityResult = mockMvc.perform(post("/api/users")
+        MvcResult conciergeResult = mockMvc.perform(post("/api/users")
                         .header("Authorization", "Bearer " + adminToken)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(createUserBody("Vigilante", "Seguridad",
-                                uniqueEmail("vigilancia"), "[\"SECURITY\"]")))
+                        .content(createUserBody("Conserje", "Edificio",
+                                uniqueEmail("conserjeria"), "[\"CONCIERGE\"]")))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.enabled").value(true))
-                .andExpect(jsonPath("$.roles[0]").value("SECURITY"))
+                .andExpect(jsonPath("$.roles[0]").value("CONCIERGE"))
                 .andReturn();
-        String securityEmail = JsonPath.read(securityResult.getResponse().getContentAsString(), "$.email");
+        String conciergeEmail = JsonPath.read(conciergeResult.getResponse().getContentAsString(), "$.email");
 
         // Nace habilitada: puede iniciar sesion de inmediato.
         mockMvc.perform(post("/api/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(loginBody(securityEmail)))
+                        .content(loginBody(conciergeEmail)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.roles[0]").value("SECURITY"));
+                .andExpect(jsonPath("$.roles[0]").value("CONCIERGE"));
     }
 
     @Test

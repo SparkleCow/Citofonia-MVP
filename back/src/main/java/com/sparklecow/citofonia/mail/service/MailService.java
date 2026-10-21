@@ -80,6 +80,16 @@ public class MailService {
         return new MailSendResponse(message.getId(), message.getSubject(), deliveries.size());
     }
 
+    /**
+     * Envia un mensaje a una lista concreta de usuarios (buzon + WebSocket).
+     * Se usa para avisos dirigidos, como el de una visita a los residentes de
+     * una vivienda.
+     */
+    @Transactional
+    public MailSendResponse sendTo(List<Long> recipientIds, String subject, String body, User actor) {
+        return send(new SendMailRequest(subject, body, MailAudience.CUSTOM, recipientIds), actor);
+    }
+
     /** Buzon del usuario ordenado del mas reciente al mas antiguo. */
     @Transactional(readOnly = true)
     public List<MailboxItemResponse> inbox(User user) {
@@ -144,7 +154,7 @@ public class MailService {
         return switch (request.audience()) {
             case ALL -> active;
             case RESIDENTS -> active.stream().filter(u -> hasRole(u, RoleName.USER)).toList();
-            case SECURITY -> active.stream().filter(u -> hasRole(u, RoleName.SECURITY)).toList();
+            case CONCIERGE -> active.stream().filter(u -> hasRole(u, RoleName.CONCIERGE)).toList();
             case CUSTOM -> resolveCustom(request.recipientIds(), active);
         };
     }

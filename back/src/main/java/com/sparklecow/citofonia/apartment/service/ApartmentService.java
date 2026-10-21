@@ -21,7 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
  * Servicio de gestion de apartamentos y sus residentes.
  *
  * <p>La lectura de apartamentos con residentes esta pensada para los roles de
- * administracion ({@code ADMIN}) y vigilancia ({@code SECURITY}). El borrado es
+ * administracion ({@code ADMIN}) y consergeria ({@code CONCIERGE}). El borrado es
  * logico: la unidad deja de ser utilizable pero se conserva.</p>
  */
 @Slf4j

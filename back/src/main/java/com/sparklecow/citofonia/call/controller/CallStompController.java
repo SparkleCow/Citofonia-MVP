@@ -1,8 +1,10 @@
 package com.sparklecow.citofonia.call.controller;
 
 import com.sparklecow.citofonia.call.CallException;
+import com.sparklecow.citofonia.call.dto.CallApartmentRequest;
 import com.sparklecow.citofonia.call.dto.CallEnvelope;
 import com.sparklecow.citofonia.call.dto.CallInviteRequest;
+import com.sparklecow.citofonia.call.dto.CallPanicRequest;
 import com.sparklecow.citofonia.call.dto.CallRequest;
 import com.sparklecow.citofonia.call.dto.CallSignalRequest;
 import com.sparklecow.citofonia.call.service.CallService;
@@ -34,7 +36,22 @@ public class CallStompController {
         callService.invite(currentUser(principal), request);
     }
 
-    /** Llamada de un residente a porteria (timbra a toda la vigilancia conectada). */
+    /** La consergeria llama a una vivienda: timbra a todos sus residentes. */
+    @MessageMapping("/call.apartment")
+    public void apartment(Principal principal, @Payload CallApartmentRequest request) {
+        callService.inviteApartment(currentUser(principal), request);
+    }
+
+    /**
+     * Alerta general del edificio (boton de panico): avisa a todos los
+     * residentes a la vez. Requiere el codigo de autorizacion.
+     */
+    @MessageMapping("/call.panic")
+    public void panic(Principal principal, @Payload CallPanicRequest request) {
+        callService.invitePanic(currentUser(principal), request);
+    }
+
+    /** Llamada de un residente a porteria (timbra a toda la consergeria conectada). */
     @MessageMapping("/call.portal")
     public void portal(Principal principal, @Payload CallRequest request) {
         callService.invitePortal(currentUser(principal), request);

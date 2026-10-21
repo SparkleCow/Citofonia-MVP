@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * Directorio de residentes a los que vigilancia (o administracion) puede
+ * Directorio de residentes a los que consergeria (o administracion) puede
  * llamar: cuentas con rol residente y vivienda vinculada.
  */
 @RestController
@@ -21,7 +21,7 @@ public class CallDirectoryController {
     private final CallService callService;
 
     @GetMapping("/residents")
-    @PreAuthorize("hasAnyRole('ADMIN','SECURITY')")
+    @PreAuthorize("hasAnyRole('ADMIN','CONCIERGE')")
     public List<ResidentDirectoryItem> residents() {
         return callService.listResidents();
     }

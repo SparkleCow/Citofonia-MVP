@@ -31,6 +31,16 @@ public record CallEnvelope(
                 CallEventType.INVITE, callId, caller.getEmail(), displayName(caller), apartmentOf(caller), null, null, null);
     }
 
+    /**
+     * Alerta general del edificio: el resident recibe un aviso de emergencia
+     * en lugar de una llamada normal.
+     */
+    public static CallEnvelope alert(String callId, User caller) {
+        return new CallEnvelope(
+                CallEventType.ALERT, callId, caller.getEmail(), displayName(caller), apartmentOf(caller),
+                null, null, "Alerta general del edificio");
+    }
+
     public static CallEnvelope accept(String callId, User callee) {
         return new CallEnvelope(
                 CallEventType.ACCEPT, callId, callee.getEmail(), displayName(callee), apartmentOf(callee), null, null, null);

@@ -92,8 +92,8 @@ public class UserController {
     }
 
     @Operation(
-            summary = "Crear usuario de vigilancia",
-            description = "Crea un usuario directamente con rol SECURITY. La cuenta nace "
+            summary = "Crear usuario de consergeria",
+            description = "Crea un usuario directamente con rol CONCIERGE. La cuenta nace "
                     + "habilitada, ya que la verificacion la realiza el propio administrador. "
                     + "Para el autoregistro de residentes use `/api/auth/register`.")
     @ApiResponses({

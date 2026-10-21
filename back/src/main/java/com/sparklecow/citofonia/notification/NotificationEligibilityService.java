@@ -9,7 +9,7 @@ import org.springframework.stereotype.Service;
  *
  * <ul>
  *   <li><strong>GENERAL</strong>: toda cuenta habilitada, con o sin vivienda
- *       (administracion, vigilancia y residentes).</li>
+ *       (administracion, consergeria y residentes).</li>
  *   <li><strong>VISIT / DELIVERY</strong>: solo quien reside en su apartamento.
  *       Un propietario ausente recibe unicamente notificaciones generales; los
  *       inquilinos y los propietarios residentes reciben ademas visitas y

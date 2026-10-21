@@ -1,15 +1,24 @@
 package com.sparklecow.citofonia.call.service;
 
+import com.sparklecow.citofonia.apartment.entity.Apartment;
+import com.sparklecow.citofonia.apartment.repository.ApartmentRepository;
 import com.sparklecow.citofonia.call.CallException;
 import com.sparklecow.citofonia.call.CallSession;
+import com.sparklecow.citofonia.call.dto.CallApartmentRequest;
 import com.sparklecow.citofonia.call.dto.CallEnvelope;
 import com.sparklecow.citofonia.call.dto.CallInviteRequest;
+import com.sparklecow.citofonia.call.dto.CallPanicRequest;
 import com.sparklecow.citofonia.call.dto.CallRequest;
 import com.sparklecow.citofonia.call.dto.CallSignalRequest;
 import com.sparklecow.citofonia.call.dto.ResidentDirectoryItem;
+import com.sparklecow.citofonia.common.exception.ApiException;
+import com.sparklecow.citofonia.config.PanicProperties;
+import com.sparklecow.citofonia.correspondence.service.CorrespondenceService;
+import com.sparklecow.citofonia.mail.service.MailService;
 import com.sparklecow.citofonia.user.entity.User;
 import com.sparklecow.citofonia.user.enums.RoleName;
 import com.sparklecow.citofonia.user.repository.UserRepository;
+import com.sparklecow.citofonia.visit.service.VisitService;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -25,17 +34,20 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
 /**
- * Gestiona las llamadas de audio entre vigilancia y residentes.
+ * Gestiona las llamadas de audio entre consergeria y residentes.
  *
  * <p>El backend solo actua como centralita de senalizacion: valida permisos y
  * reenvia los mensajes ({@link CallEnvelope}) por la cola personal
  * {@code /user/queue/calls} de cada participante. El audio viaja directo
  * entre los navegadores mediante WebRTC (P2P).</p>
  *
- * <p>Hay dos flujos: la vigilancia llama a un residente concreto
- * ({@code /app/call.invite}) y un residente llama a porteria
- * ({@code /app/call.portal}), que timbra a toda la vigilancia conectada; el
- * primero que acepta atiende y al resto se le cierra el aviso.</p>
+ * <p>Hay tres flujos: la consergeria llama a un residente concreto
+ * ({@code /app/call.invite}), la consergeria llama a una vivienda entera
+ * ({@code /app/call.apartment}), que timbra a la vez a todos los residentes que
+ * residen en ella, y un residente llama a porteria
+ * ({@code /app/call.portal}), que timbra a toda la consergeria conectada; en
+ * los dos ultimos el primero que acepta atiende y al resto se le cierra el
+ * aviso.</p>
  *
  * <p>El estado de las llamadas vive en memoria: coherente con el broker
  * simple de Spring y suficiente para una unica instancia.</p>
@@ -50,7 +62,12 @@ public class CallService {
 
     private final SimpMessagingTemplate messagingTemplate;
     private final UserRepository userRepository;
+    private final ApartmentRepository apartmentRepository;
     private final SimpUserRegistry userRegistry;
+    private final VisitService visitService;
+    private final CorrespondenceService correspondenceService;
+    private final MailService mailService;
+    private final PanicProperties panicProperties;
 
     /** Llamadas en curso indexadas por identificador de llamada. */
     private final Map<String, CallSession> sessions = new ConcurrentHashMap<>();
@@ -67,7 +84,7 @@ public class CallService {
                 .toList();
     }
 
-    /** Invita a un residente a una llamada (solo vigilancia/administracion). */
+    /** Invita a un residente a una llamada (solo consergeria/administracion). */
     public void invite(User caller, CallInviteRequest request) {
         requireStaff(caller);
         String callId = requireText(request.callId(), "Falta el identificador de llamada");
@@ -90,6 +107,12 @@ public class CallService {
         if (findByParticipant(targetEmail) != null) {
             throw new CallException("El residente esta en otra llamada");
         }
+        if (request.visitId() != null) {
+            linkVisit(request.visitId(), callee);
+        }
+        if (request.correspondenceId() != null) {
+            linkCorrespondence(request.correspondenceId(), callee);
+        }
 
         CallSession session = new CallSession(callId, caller.getEmail(), List.of(targetEmail), false);
         sessions.put(callId, session);
@@ -97,7 +120,99 @@ public class CallService {
         log.info("Llamada {} iniciada por {} hacia {}", callId, caller.getEmail(), targetEmail);
     }
 
-    /** Un residente llama a porteria: timbra a toda la vigilancia conectada. */
+    /**
+     * La consergeria llama a una vivienda: timbra a la vez a todos los
+     * residentes que residen en ella y el primero que contesta atiende la
+     * llamada (a los demas se les cierra el aviso).
+     */
+    public void inviteApartment(User caller, CallApartmentRequest request) {
+        requireStaff(caller);
+        String callId = requireText(request.callId(), "Falta el identificador de llamada");
+        if (request.apartmentId() == null) {
+            throw new CallException("Falta el apartamento al que llamar");
+        }
+        if (sessions.containsKey(callId)) {
+            throw new CallException("La llamada ya existe");
+        }
+        if (findByParticipant(caller.getEmail()) != null) {
+            throw new CallException("Ya tienes una llamada en curso");
+        }
+        Apartment apartment = apartmentRepository.findByIdAndDeletedFalse(request.apartmentId())
+                .orElseThrow(() -> new CallException("El apartamento no existe"));
+        List<User> residents = userRepository.findResidentsLivingInApartment(apartment.getId());
+        if (residents.isEmpty()) {
+            throw new CallException("No hay residentes residiendo en esa vivienda");
+        }
+        if (request.visitId() != null) {
+            linkVisit(request.visitId(), residents);
+        }
+        if (request.correspondenceId() != null) {
+            linkCorrespondence(request.correspondenceId(), residents);
+        }
+
+        List<String> targets = residents.stream().map(User::getEmail).toList();
+        CallSession session = new CallSession(callId, caller.getEmail(), targets, true);
+        sessions.put(callId, session);
+        CallEnvelope invite = CallEnvelope.invite(callId, caller);
+        targets.forEach(email -> push(email, invite));
+        log.info("Llamada {} de {} al apartamento {}: {} residente(s) timbrados",
+                callId, caller.getEmail(), apartment.getIdentifier(), targets.size());
+    }
+
+    /**
+     * Alerta general del edificio (boton de panico): la consergeria o la
+     * administracion avisa a TODOS los residentes a la vez. Requiere el codigo de
+     * autorizacion para que no se lance por error. El resident recibe un aviso
+     * de emergencia y el primero que lo acepta atiende la llamada.
+     */
+    public void invitePanic(User caller, CallPanicRequest request) {
+        requireStaff(caller);
+        String callId = requireText(request.callId(), "Falta el identificador de llamada");
+        if (!isValidPanicCode(request.code())) {
+            throw new CallException("El codigo de la alerta general no es correcto");
+        }
+        if (sessions.containsKey(callId)) {
+            throw new CallException("La llamada ya existe");
+        }
+        if (findByParticipant(caller.getEmail()) != null) {
+            throw new CallException("Ya tienes una llamada en curso");
+        }
+        List<User> residents = userRepository.findResidentsWithApartment().stream()
+                .filter(User::isEnabled)
+                .toList();
+        if (residents.isEmpty()) {
+            throw new CallException("No hay residentes a los que avisar");
+        }
+
+        List<String> targets = residents.stream().map(User::getEmail).toList();
+        CallSession session = new CallSession(callId, caller.getEmail(), targets, true, true);
+        sessions.put(callId, session);
+        CallEnvelope alert = CallEnvelope.alert(callId, caller);
+        targets.forEach(email -> push(email, alert));
+        log.warn("ALERTA GENERAL activada por {}: {} residente(s) avisados",
+                caller.getEmail(), targets.size());
+        leaveAlertInMailboxes(residents, caller);
+    }
+
+    /**
+     * Deja constancia de la alerta en el buzon de cada residente: queda
+     * registrada aunque el resident tenga la aplicacion cerrada.
+     */
+    private void leaveAlertInMailboxes(List<User> residents, User caller) {
+        try {
+            mailService.sendTo(
+                    residents.stream().map(User::getId).toList(),
+                    "Alerta general del edificio",
+                    "Se ha activado una alerta general en el edificio.\n\n"
+                            + "Atiende la llamada de porteria o acude al portal.\n\n"
+                            + "Activada por: " + display(caller),
+                    caller);
+        } catch (RuntimeException err) {
+            log.warn("No se pudo dejar la alerta general en los buzones: {}", err.getMessage());
+        }
+    }
+
+    /** Un residente llama a porteria: timbra a toda la consergeria conectada. */
     public void invitePortal(User caller, CallRequest request) {
         requireResident(caller);
         String callId = requireText(request.callId(), "Falta el identificador de llamada");
@@ -110,14 +225,14 @@ public class CallService {
         }
         Set<String> staff = connectedStaffEmails(caller.getEmail());
         if (staff.isEmpty()) {
-            throw new CallException("No hay vigilancia conectada en este momento");
+            throw new CallException("No hay consergeria conectada en este momento");
         }
 
         CallSession session = new CallSession(callId, caller.getEmail(), staff, true);
         sessions.put(callId, session);
         CallEnvelope invite = CallEnvelope.invite(callId, caller);
         staff.forEach(email -> push(email, invite));
-        log.info("Llamada {} de {} ({}) a porteria: {} vigilante(s) timbrados",
+        log.info("Llamada {} de {} ({}) a porteria: {} conserje(s) timbrados",
                 callId, caller.getEmail(), PORTAL_LABEL, staff.size());
     }
 
@@ -137,11 +252,12 @@ public class CallService {
         session.getInvitedEmails().stream()
                 .filter(email -> !email.equalsIgnoreCase(user.getEmail()))
                 .forEach(email -> push(email, CallEnvelope.endedWithMessage(
-                        session.getCallId(), user.getEmail(), display(user) + " ha atendido la llamada")));
+                        session.getCallId(), user.getEmail(),
+                        display(user) + (session.isAlert() ? " ha atendido la alerta" : " ha atendido la llamada"))));
         log.info("Llamada {} atendida por {}", session.getCallId(), user.getEmail());
     }
 
-    /** Rechazo: cierra la llamada o, en porteria, descarta a ese vigilante. */
+    /** Rechazo: cierra la llamada o, en porteria, descarta a ese conserje. */
     public void reject(User user, CallRequest request) {
         CallSession session = requireSession(request.callId());
         if (!session.isInvited(user.getEmail())) {
@@ -150,9 +266,9 @@ public class CallService {
         if (session.isAnswered()) {
             throw new CallException("La llamada ya ha sido atendida");
         }
-        // En una llamada a porteria, si quedan mas companeros timbrando la
-        // llamada sigue sonando para ellos.
-        if (session.isPortalCall() && session.getInvitedEmails().size() > 1) {
+        // En una llamada a porteria o a una vivienda, si quedan mas companeros
+        // timbrando la llamada sigue sonando para ellos.
+        if (session.isMultiTarget() && session.getInvitedEmails().size() > 1) {
             session.getInvitedEmails().removeIf(email -> email.equalsIgnoreCase(user.getEmail()));
             log.info("Llamada {}: {} rechaza, sigue timbrando al resto", session.getCallId(), user.getEmail());
             return;
@@ -200,7 +316,7 @@ public class CallService {
             return;
         }
         sessions.values().stream().filter(session -> session.involves(email)).toList().forEach(session -> {
-            // Un vigilante timbrado que se cae sin contestar no cierra la
+            // Un conserje timbrado que se cae sin contestar no cierra la
             // llamada de porteria: solo deja de ser candidato.
             if (session.isInvited(email) && !session.isCaller(email) && !session.hasAnswered(email)) {
                 session.getInvitedEmails().removeIf(invited -> invited.equalsIgnoreCase(email));
@@ -226,7 +342,7 @@ public class CallService {
         return sessions.size();
     }
 
-    /** Vigilantes y administradores conectados ahora mismo (por email). */
+    /** Conserjes y administradores conectados ahora mismo (por email). */
     private Set<String> connectedStaffEmails(String excludeEmail) {
         Set<String> staff = ConcurrentHashMap.newKeySet();
         for (SimpUser user : userRegistry.getUsers()) {
@@ -242,7 +358,7 @@ public class CallService {
     private boolean hasStaffAuthority(Authentication authentication) {
         return authentication.getAuthorities().stream()
                 .map(GrantedAuthority::getAuthority)
-                .anyMatch(authority -> RoleName.SECURITY.getAuthority().equals(authority)
+                .anyMatch(authority -> RoleName.CONCIERGE.getAuthority().equals(authority)
                         || RoleName.ADMIN.getAuthority().equals(authority));
     }
 
@@ -259,6 +375,41 @@ public class CallService {
         return sessions.values().stream().filter(session -> session.involves(email)).findFirst().orElse(null);
     }
 
+    /**
+     * Enlaza la llamada con la visita que la motiva: al llamar al residente
+     * para notificarle la visita, esta queda registrada como avisada.
+     */
+    private void linkVisit(Long visitId, User callee) {
+        linkVisit(visitId, List.of(callee));
+    }
+
+    /** Igual que {@link #linkVisit(Long, User)} pero para varios residentes a la vez. */
+    private void linkVisit(Long visitId, List<User> residents) {
+        try {
+            visitService.markNotifiedByCall(visitId, residents);
+        } catch (ApiException ex) {
+            throw new CallException(ex.getMessage());
+        }
+    }
+
+    /**
+     * Enlaza la llamada con la correspondencia que la motiva: al llamar al
+     * residente para notificarle la entrega, esta queda registrada como
+     * avisada.
+     */
+    private void linkCorrespondence(Long correspondenceId, User callee) {
+        linkCorrespondence(correspondenceId, List.of(callee));
+    }
+
+    /** Igual que {@link #linkCorrespondence(Long, User)} pero para varios residentes a la vez. */
+    private void linkCorrespondence(Long correspondenceId, List<User> residents) {
+        try {
+            correspondenceService.markNotifiedByCall(correspondenceId, residents);
+        } catch (ApiException ex) {
+            throw new CallException(ex.getMessage());
+        }
+    }
+
     private void requireParticipant(CallSession session, User user) {
         if (!session.involves(user.getEmail())) {
             throw new CallException("No participas en esta llamada");
@@ -266,8 +417,8 @@ public class CallService {
     }
 
     private void requireStaff(User caller) {
-        if (!hasRole(caller, RoleName.SECURITY) && !hasRole(caller, RoleName.ADMIN)) {
-            throw new CallException("Solo vigilancia o administracion pueden llamar a los residentes");
+        if (!hasRole(caller, RoleName.CONCIERGE) && !hasRole(caller, RoleName.ADMIN)) {
+            throw new CallException("Solo consergeria o administracion pueden llamar a los residentes");
         }
     }
 
@@ -290,6 +441,11 @@ public class CallService {
             throw new CallException(message);
         }
         return value.trim();
+    }
+
+    /** El codigo tecleado por consergeria debe coincidir con el configurado. */
+    private boolean isValidPanicCode(String code) {
+        return StringUtils.hasText(code) && panicProperties.code().equals(code.trim());
     }
 
     private void push(String email, CallEnvelope envelope) {

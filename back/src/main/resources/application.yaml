@@ -5,3 +5,8 @@ spring:
     default: dev
   jpa:
     open-in-view: false
+
+app:
+  panic:
+    # Codigo que hay que teclear para lanzar la alerta general a todos los residentes.
+    code: ${PANIC_ALERT_CODE:123}

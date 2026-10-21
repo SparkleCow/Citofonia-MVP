@@ -21,7 +21,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
 /**
- * Pruebas del directorio de llamadas: solo vigilancia/administracion pueden
+ * Pruebas del directorio de llamadas: solo consergeria/administracion pueden
  * consultarlo y solo aparecen residentes con vivienda vinculada.
  */
 @SpringBootTest
@@ -39,9 +39,9 @@ class CallDirectoryIntegrationTest {
     private String residentCode;
 
     @Test
-    void securityAndAdminSeeResidentsWithApartment() throws Exception {
+    void conciergeAndAdminSeeResidentsWithApartment() throws Exception {
         String adminToken = login(ADMIN_EMAIL, ADMIN_PASSWORD);
-        String securityToken = createSecurityAndLogin(adminToken);
+        String conciergeToken = createConciergeAndLogin(adminToken);
         long apartmentId = firstApartmentId();
 
         String residentEmail = uniqueEmail("directorio");
@@ -50,7 +50,7 @@ class CallDirectoryIntegrationTest {
                         .header("Authorization", "Bearer " + adminToken))
                 .andExpect(status().isOk());
 
-        mockMvc.perform(get("/api/calls/residents").header("Authorization", "Bearer " + securityToken))
+        mockMvc.perform(get("/api/calls/residents").header("Authorization", "Bearer " + conciergeToken))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString(residentEmail)));
 
@@ -62,12 +62,12 @@ class CallDirectoryIntegrationTest {
     @Test
     void residentsWithoutApartmentAreNotListed() throws Exception {
         String adminToken = login(ADMIN_EMAIL, ADMIN_PASSWORD);
-        String securityToken = createSecurityAndLogin(adminToken);
+        String conciergeToken = createConciergeAndLogin(adminToken);
 
         String residentEmail = uniqueEmail("sinvivienda");
         registerResident(residentEmail, null);
 
-        mockMvc.perform(get("/api/calls/residents").header("Authorization", "Bearer " + securityToken))
+        mockMvc.perform(get("/api/calls/residents").header("Authorization", "Bearer " + conciergeToken))
                 .andExpect(status().isOk())
                 .andExpect(content().string(not(containsString(residentEmail))));
     }
@@ -86,14 +86,14 @@ class CallDirectoryIntegrationTest {
                 .andExpect(status().isForbidden());
     }
 
-    private String createSecurityAndLogin(String adminToken) throws Exception {
-        String email = uniqueEmail("vigidir");
+    private String createConciergeAndLogin(String adminToken) throws Exception {
+        String email = uniqueEmail("conserjedir");
         mockMvc.perform(post("/api/users")
                         .header("Authorization", "Bearer " + adminToken)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"firstName":"Vigi","lastName":"Directorio","email":"%s","password":"%s",
-                                 "roles":["SECURITY"]}
+                                {"firstName":"Conserje","lastName":"Directorio","email":"%s","password":"%s",
+                                 "roles":["CONCIERGE"]}
                                 """.formatted(email, PASSWORD)))
                 .andExpect(status().isCreated());
         return login(email, PASSWORD);

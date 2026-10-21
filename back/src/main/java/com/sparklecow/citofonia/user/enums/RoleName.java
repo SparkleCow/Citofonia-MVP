@@ -8,8 +8,8 @@ public enum RoleName {
     /** Acceso total: gestion de usuarios, codigos de registro y configuracion. */
     ADMIN("ROLE_ADMIN"),
 
-    /** Personal de vigilancia/gerencia: panel operativo del edificio. */
-    SECURITY("ROLE_SECURITY"),
+    /** Personal de consergeria/porteria: panel operativo del edificio. */
+    CONCIERGE("ROLE_CONCIERGE"),
 
     /** Residente (rol por defecto de cualquier cuenta registrada). */
     USER("ROLE_USER");

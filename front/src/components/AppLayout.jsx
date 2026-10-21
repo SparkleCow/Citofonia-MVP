@@ -6,7 +6,7 @@ import { IntercomIcon } from './icons'
 
 const ROLE_LABELS = {
   ADMIN: 'Administracion',
-  SECURITY: 'Vigilancia',
+  CONCIERGE: 'Conserje',
   USER: 'Residente',
 }
 

@@ -23,7 +23,7 @@ function micError(error) {
 }
 
 /**
- * Llamadas de audio (WebRTC) entre vigilancia y residentes.
+ * Llamadas de audio (WebRTC) entre conserjeria y residentes.
  *
  * El backend actua de centralita: la invitacion, la aceptacion y el
  * intercambio SDP/ICE viajan por STOMP (`/app/call.*` y
@@ -108,8 +108,8 @@ export function CallProvider({ children }) {
     }
   }, [])
 
-  /** Arranca una llamada saliente (directa a un residente o a porteria). */
-  const beginCall = useCallback(async ({ peerEmail, peerName, peerApartment, portal = false, destination, body }) => {
+  /** Arranca una llamada saliente (directa a un residente, a una vivienda o a porteria). */
+  const beginCall = useCallback(async ({ peerEmail, peerName, peerApartment, portal = false, apartment = false, alert = false, destination, body }) => {
     if (callRef.current) return
     setError(null)
     const callId = crypto.randomUUID()
@@ -124,6 +124,8 @@ export function CallProvider({ children }) {
         peerName,
         peerApartment,
         portal,
+        apartment,
+        alert,
         phase: 'ringing',
         muted: false,
       })
@@ -134,16 +136,44 @@ export function CallProvider({ children }) {
     }
   }, [cleanup, createPeer, prepareMedia])
 
-  /** Vigilancia llama a un residente. */
-  const startCall = useCallback((resident) => beginCall({
+  /**
+   * Consergeria llama a un residente.
+   * @param {object} resident datos del residente (email, nombre, vivienda)
+   * @param {object} options motivo de la llamada: visitId o correspondenceId
+   */
+  const startCall = useCallback((resident, options = {}) => beginCall({
     peerEmail: resident.email,
     peerName: displayName(resident),
     peerApartment: resident.apartmentIdentifier || null,
     destination: '/app/call.invite',
-    body: { targetEmail: resident.email },
+    body: {
+      targetEmail: resident.email,
+      visitId: options.visitId ?? null,
+      correspondenceId: options.correspondenceId ?? null,
+    },
   }), [beginCall])
 
-  /** El residente llama a porteria: timbra a toda la vigilancia conectada. */
+  /**
+   * Consergeria llama a una vivienda entera: timbra a la vez a todos los
+   * residentes que residen en ella y el primero que contesta atiende.
+   * @param {number} apartmentId vivienda a la que se llama
+   * @param {string} apartmentIdentifier identificador visible de la vivienda
+   * @param {object} options motivo de la llamada: visitId o correspondenceId
+   */
+  const startApartmentCall = useCallback((apartmentId, apartmentIdentifier, options = {}) => beginCall({
+    peerEmail: null,
+    peerName: `Apartamento ${apartmentIdentifier || ''}`.trim(),
+    peerApartment: apartmentIdentifier || null,
+    apartment: true,
+    destination: '/app/call.apartment',
+    body: {
+      apartmentId,
+      visitId: options.visitId ?? null,
+      correspondenceId: options.correspondenceId ?? null,
+    },
+  }), [beginCall])
+
+  /** El residente llama a porteria: timbra a toda la conserjeria conectada. */
   const startPortalCall = useCallback(() => beginCall({
     peerEmail: null,
     peerName: 'Porteria',
@@ -151,6 +181,21 @@ export function CallProvider({ children }) {
     portal: true,
     destination: '/app/call.portal',
     body: {},
+  }), [beginCall])
+
+  /**
+   * Alerta general del edificio (boton de panico): avisa a TODOS los residentes
+   * a la vez. El backend exige el codigo de autorizacion; el primero que
+   * acepta la alerta atiende la llamada.
+   * @param {string} code codigo de autorizacion de la alerta
+   */
+  const startPanicAlert = useCallback((code) => beginCall({
+    peerEmail: null,
+    peerName: 'Todos los residentes',
+    peerApartment: null,
+    alert: true,
+    destination: '/app/call.panic',
+    body: { code },
   }), [beginCall])
 
   /** El residente acepta la llamada entrante. */
@@ -212,6 +257,24 @@ export function CallProvider({ children }) {
           peerEmail: envelope.from,
           peerName: envelope.fromName || envelope.from,
           peerApartment: envelope.fromApartment || null,
+          phase: 'ringing',
+          muted: false,
+        })
+        return
+      }
+      case 'ALERT': {
+        if (callRef.current) {
+          trySend('/app/call.reject', { callId: envelope.callId })
+          return
+        }
+        setError(null)
+        setCall({
+          callId: envelope.callId,
+          direction: 'incoming',
+          peerEmail: envelope.from,
+          peerName: envelope.fromName || envelope.from,
+          peerApartment: envelope.fromApartment || null,
+          alert: true,
           phase: 'ringing',
           muted: false,
         })
@@ -297,14 +360,29 @@ export function CallProvider({ children }) {
       error,
       busy: Boolean(call),
       startCall,
+      startApartmentCall,
       startPortalCall,
+      startPanicAlert,
       acceptCall,
       rejectCall,
       hangup,
       toggleMute,
       clearError,
     }),
-    [call, remoteStream, error, startCall, startPortalCall, acceptCall, rejectCall, hangup, toggleMute, clearError],
+    [
+      call,
+      remoteStream,
+      error,
+      startCall,
+      startApartmentCall,
+      startPortalCall,
+      startPanicAlert,
+      acceptCall,
+      rejectCall,
+      hangup,
+      toggleMute,
+      clearError,
+    ],
   )
 
   return <CallContext.Provider value={value}>{children}</CallContext.Provider>

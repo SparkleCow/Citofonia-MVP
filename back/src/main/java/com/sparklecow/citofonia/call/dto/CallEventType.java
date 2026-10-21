@@ -6,8 +6,14 @@ package com.sparklecow.citofonia.call.dto;
  */
 public enum CallEventType {
 
-    /** La vigilancia llama a un residente o un residente llama a porteria. */
+    /** La consergeria llama a un residente o un residente llama a porteria. */
     INVITE,
+
+    /**
+     * Alerta general del edificio: la consergeria o la administracion avisa a
+     * todos los residentes a la vez (boton de panico).
+     */
+    ALERT,
 
     /** El invitado ha aceptado la llamada. */
     ACCEPT,

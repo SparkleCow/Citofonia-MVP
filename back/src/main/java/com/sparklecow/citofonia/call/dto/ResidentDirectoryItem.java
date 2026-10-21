@@ -2,7 +2,7 @@ package com.sparklecow.citofonia.call.dto;
 
 /**
  * Entrada del directorio de llamadas: un residente con vivienda vinculada al
- * que vigilancia puede llamar.
+ * que consergeria puede llamar.
  */
 public record ResidentDirectoryItem(
         Long id,

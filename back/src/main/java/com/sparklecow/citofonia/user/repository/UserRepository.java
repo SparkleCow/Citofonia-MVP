@@ -42,6 +42,23 @@ public interface UserRepository extends JpaRepository<User, Long> {
             """)
     List<User> findResidentsWithApartment();
 
+    /**
+     * Residentes que residen en una vivienda: rol residente, vivienda
+     * vinculada y residencia actual en ella. Un propietario ausente
+     * (no ocupa la vivienda) queda excluido.
+     *
+     * <p>Es el conjunto de personas que pueden recibir los avisos de una
+     * visita y a las que se puede llamar al timbrar una vivienda.</p>
+     */
+    @Query("""
+            SELECT u FROM User u JOIN u.roles r
+            WHERE r.name = com.sparklecow.citofonia.user.enums.RoleName.USER
+              AND u.deleted = false AND u.apartment IS NOT NULL
+              AND u.apartment.id = :apartmentId AND u.occupiesApartment = true
+            ORDER BY u.firstName, u.lastName
+            """)
+    List<User> findResidentsLivingInApartment(@Param("apartmentId") Long apartmentId);
+
     @Query("SELECT COUNT(u) > 0 FROM User u WHERE u.email = :email AND u.deleted = false")
     boolean existsActiveByEmail(@Param("email") String email);
 }

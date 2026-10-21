@@ -32,7 +32,7 @@ public class OpenApiConfig {
                                 1. Los **residentes** se registran en `/api/auth/register` con el \
                                 codigo de registro del edificio (unico, global y fijo). La cuenta \
                                 queda **deshabilitada** hasta que un administrador la active.
-                                2. El administrador crea cuentas de **vigilancia** (rol SECURITY) \
+                                2. El administrador crea cuentas de **consergeria** (rol CONCIERGE) \
                                 directamente desde el panel de administracion via `POST /api/users`; \
                                 esas cuentas nacen habilitadas.
                                 3. Un administrador habilita cuentas pendientes en \

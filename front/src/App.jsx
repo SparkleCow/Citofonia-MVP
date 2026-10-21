@@ -12,7 +12,7 @@ import RegisterPage from './pages/RegisterPage'
 import AdminPage from './pages/admin/AdminPage'
 import MailboxPage from './pages/MailboxPage'
 import ResidentePage from './pages/residente/ResidentePage'
-import VigilanciaPage from './pages/vigilancia/VigilanciaPage'
+import ConserjeriaPage from './pages/conserjeria/ConserjeriaPage'
 import './App.css'
 
 function HomeRedirect() {
@@ -48,10 +48,10 @@ export default function App() {
                   }
                 />
                 <Route
-                  path="/vigilancia"
+                  path="/conserjeria"
                   element={
-                    <ProtectedRoute roles={['SECURITY', 'ADMIN']}>
-                      <VigilanciaPage />
+                    <ProtectedRoute roles={['CONCIERGE', 'ADMIN']}>
+                      <ConserjeriaPage />
                     </ProtectedRoute>
                   }
                 />
@@ -66,7 +66,7 @@ export default function App() {
                 <Route
                   path="/buzon"
                   element={
-                    <ProtectedRoute roles={['USER', 'SECURITY', 'ADMIN']}>
+                    <ProtectedRoute roles={['USER', 'CONCIERGE', 'ADMIN']}>
                       <MailboxPage />
                     </ProtectedRoute>
                   }

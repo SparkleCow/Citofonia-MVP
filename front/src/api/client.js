@@ -56,6 +56,7 @@ export const usersApi = {
 
 export const apartmentsApi = {
   options: () => api('/api/apartments/options', { auth: false }),
+  list: (page = 0, size = 200) => api(`/api/apartments?page=${page}&size=${size}`),
 }
 
 export const notificationsApi = {
@@ -72,4 +73,27 @@ export const mailApi = {
 
 export const callsApi = {
   residents: () => api('/api/calls/residents'),
+}
+
+export const visitsApi = {
+  list: (page = 0, size = 20) => api(`/api/visits?page=${page}&size=${size}`),
+  mine: (page = 0, size = 20) => api(`/api/visits/mine?page=${page}&size=${size}`),
+  recipients: (apartmentId) => api(`/api/visits/recipients?apartmentId=${apartmentId}`),
+  create: (payload) => api('/api/visits', { method: 'POST', body: payload }),
+  notify: (id, residentIds) =>
+    api(`/api/visits/${id}/notify`, { method: 'POST', body: { residentIds } }),
+  updateStatus: (id, status, exitAt) =>
+    api(`/api/visits/${id}/status`, { method: 'PATCH', body: { status, exitAt: exitAt || null } }),
+}
+
+export const correspondenceApi = {
+  list: (page = 0, size = 20) => api(`/api/correspondences?page=${page}&size=${size}`),
+  mine: (page = 0, size = 20) => api(`/api/correspondences/mine?page=${page}&size=${size}`),
+  recipients: (apartmentId) => api(`/api/correspondences/recipients?apartmentId=${apartmentId}`),
+  create: (payload) => api('/api/correspondences', { method: 'POST', body: payload }),
+  notify: (id, residentIds) =>
+    api(`/api/correspondences/${id}/notify`, { method: 'POST', body: { residentIds } }),
+  holdAtDesk: (id) => api(`/api/correspondences/${id}/hold`, { method: 'POST' }),
+  updateStatus: (id, status, delivery) =>
+    api(`/api/correspondences/${id}/status`, { method: 'PATCH', body: { status, delivery: delivery || null } }),
 }

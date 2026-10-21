@@ -93,24 +93,24 @@ class MailIntegrationTest {
     }
 
     @Test
-    void securityRoleCannotSendMessagesAndCannotReadOthersMailbox() throws Exception {
+    void conciergeRoleCannotSendMessagesAndCannotReadOthersMailbox() throws Exception {
         String adminToken = login(ADMIN_EMAIL);
 
-        // Cuenta de vigilancia creada por el admin.
-        String securityEmail = uniqueEmail("vigibuzon");
+        // Cuenta de consergeria creada por el admin.
+        String conciergeEmail = uniqueEmail("conserjebuzon");
         mockMvc.perform(post("/api/users")
                         .header("Authorization", "Bearer " + adminToken)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"firstName":"Vigi","lastName":"Buzon","email":"%s","password":"%s",
-                                 "roles":["SECURITY"]}
-                                """.formatted(securityEmail, PASSWORD)))
+                                {"firstName":"Conserje","lastName":"Buzon","email":"%s","password":"%s",
+                                 "roles":["CONCIERGE"]}
+                                """.formatted(conciergeEmail, PASSWORD)))
                 .andExpect(status().isCreated());
-        String securityToken = login(securityEmail);
+        String conciergeToken = login(conciergeEmail);
 
-        // Vigilancia no puede enviar mensajes (solo ADMIN).
+        // La consergeria no puede enviar mensajes (solo ADMIN).
         mockMvc.perform(post("/api/admin/mail")
-                        .header("Authorization", "Bearer " + securityToken)
+                        .header("Authorization", "Bearer " + conciergeToken)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"subject":"Hola","body":"No deberia poder","audience":"ALL"}
@@ -148,18 +148,18 @@ class MailIntegrationTest {
     void targetedAudienceOnlyReachesChosenRoles() throws Exception {
         String adminToken = login(ADMIN_EMAIL);
 
-        String securityEmail = uniqueEmail("segseg");
+        String conciergeEmail = uniqueEmail("conserjeseg");
         mockMvc.perform(post("/api/users")
                         .header("Authorization", "Bearer " + adminToken)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"firstName":"Seg","lastName":"Uridad","email":"%s","password":"%s",
-                                 "roles":["SECURITY"]}
-                                """.formatted(securityEmail, PASSWORD)))
+                                {"firstName":"Conserje","lastName":"Edificio","email":"%s","password":"%s",
+                                 "roles":["CONCIERGE"]}
+                                """.formatted(conciergeEmail, PASSWORD)))
                 .andExpect(status().isCreated());
-        String securityToken = login(securityEmail);
+        String conciergeToken = login(conciergeEmail);
 
-        // Residente habilitado para comprobar que NO recibe los avisos de vigilancia.
+        // Residente habilitado para comprobar que NO recibe los avisos de consergeria.
         String residentEmail = uniqueEmail("nores");
         long residentId = registerResident(residentEmail);
         mockMvc.perform(patch("/api/users/" + residentId + "/enable")
@@ -167,19 +167,19 @@ class MailIntegrationTest {
                 .andExpect(status().isOk());
         String residentToken = login(residentEmail);
 
-        // El admin envia solo a vigilancia.
+        // El admin envia solo a consergeria.
         mockMvc.perform(post("/api/admin/mail")
                         .header("Authorization", "Bearer " + adminToken)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"subject":"Reunion de vigilancia","body":"Mañana 8:00.",
-                                 "audience":"SECURITY"}
+                                {"subject":"Reunion de consergeria","body":"Mañana 8:00.",
+                                 "audience":"CONCIERGE"}
                                 """))
                 .andExpect(status().isCreated());
 
-        mockMvc.perform(get("/api/mail/messages").header("Authorization", "Bearer " + securityToken))
+        mockMvc.perform(get("/api/mail/messages").header("Authorization", "Bearer " + conciergeToken))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].subject").value("Reunion de vigilancia"));
+                .andExpect(jsonPath("$[0].subject").value("Reunion de consergeria"));
         mockMvc.perform(get("/api/mail/messages").header("Authorization", "Bearer " + residentToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$", hasSize(0)));

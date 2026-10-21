@@ -11,7 +11,7 @@ import lombok.Getter;
  *
  * <p>Una llamada tiene un llamante, uno o varios invitados (timbrados) y,
  * una vez alguien contesta, un atendido. El caso de varios invitados es la
- * llamada a porteria: se timbra a toda la vigilancia conectada y el primero
+ * llamada a porteria: se timbra a toda la consergeria conectada y el primero
  * que acepta atiende la llamada.</p>
  */
 @Getter
@@ -23,20 +23,36 @@ public final class CallSession {
     /** Usuarios a los que se esta timbrando (uno si es una llamada directa). */
     private final Set<String> invitedEmails;
 
-    /** {@code true} si es una llamada de un residente a porteria. */
-    private final boolean portalCall;
+    /**
+     * {@code true} si la llamada se dirige a varios destinatarios a la vez
+     * (porteria o vivienda): el primero que acepta atiende y al resto se le
+     * cierra el aviso.
+     */
+    private final boolean multiTarget;
+
+    /**
+     * {@code true} si es una alerta general (boton de panico): el resident
+     * recibe un aviso de emergencia y el primero que la acepta la atiende.
+     */
+    private final boolean alert;
 
     private final Instant createdAt;
 
     /** Usuario que ha aceptado; {@code null} mientras sigue sonando. */
     private volatile String calleeEmail;
 
-    public CallSession(String callId, String callerEmail, Collection<String> invitedEmails, boolean portalCall) {
+    public CallSession(String callId, String callerEmail, Collection<String> invitedEmails, boolean multiTarget) {
+        this(callId, callerEmail, invitedEmails, multiTarget, false);
+    }
+
+    public CallSession(String callId, String callerEmail, Collection<String> invitedEmails,
+                       boolean multiTarget, boolean alert) {
         this.callId = callId;
         this.callerEmail = callerEmail;
         this.invitedEmails = ConcurrentHashMap.newKeySet();
         this.invitedEmails.addAll(invitedEmails);
-        this.portalCall = portalCall;
+        this.multiTarget = multiTarget;
+        this.alert = alert;
         this.createdAt = Instant.now();
     }
 

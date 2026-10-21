@@ -14,6 +14,6 @@ public enum HousingProfile {
     /** Tiene vivienda pero no reside en ella (caso no contemplado hoy). */
     NON_RESIDENT,
 
-    /** Sin vivienda vinculada (administracion, vigilancia...). */
+    /** Sin vivienda vinculada (administracion, consergeria...). */
     NONE
 }

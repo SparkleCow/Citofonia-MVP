@@ -46,8 +46,38 @@ public class BootstrapDataInitializer implements ApplicationRunner {
     @Override
     @Transactional
     public void run(ApplicationArguments args) {
+        migrateLegacyRoles();
         ensureRolesExist();
         ensureAdminExists();
+    }
+
+    /**
+     * Migra nombres de rol obsoletos que ya no existen en {@link RoleName}
+     * (p. ej. {@code SECURITY} renombrado a {@code CONCIERGE}). Se hace por SQL
+     * nativo porque la entidad {@link Role} no puede hidratar un valor que ya
+     * no es un enum valido. Si el rol destino ya existia, se reasignan los
+     * usuarios y se elimina el rol obsoleto; si no, se renombra directamente.
+     */
+    private void migrateLegacyRoles() {
+        migrateRole("SECURITY", RoleName.CONCIERGE.name());
+    }
+
+    private void migrateRole(String legacyName, String currentName) {
+        boolean targetExists = roleRepository.existsByName(RoleName.valueOf(currentName));
+        if (!targetExists) {
+            int renamed = roleRepository.renameRole(legacyName, currentName);
+            if (renamed > 0) {
+                log.info("Rol obsoleto {} migrado a {}", legacyName, currentName);
+            }
+            return;
+        }
+        int reassigned = roleRepository.reassignUsers(legacyName, currentName);
+        int unlinked = roleRepository.unlinkUsers(legacyName);
+        int deleted = roleRepository.deleteByName(legacyName);
+        if (unlinked > 0 || deleted > 0) {
+            log.info("Rol obsoleto {} eliminado tras reasignar {} vinculos a {}",
+                    legacyName, reassigned, currentName);
+        }
     }
 
     private void ensureRolesExist() {

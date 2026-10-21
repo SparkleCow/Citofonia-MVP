@@ -67,7 +67,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.PATCH, "/api/users/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.DELETE, "/api/users/**").hasRole("ADMIN")
                         // Escritura de apartamentos: exclusiva de administradores.
-                        // La lectura (GET) se autoriza via @PreAuthorize (ADMIN o SECURITY).
+                        // La lectura (GET) se autoriza via @PreAuthorize (ADMIN o CONCIERGE).
                         .requestMatchers(HttpMethod.POST, "/api/apartments/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.PUT, "/api/apartments/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.PATCH, "/api/apartments/**").hasRole("ADMIN")

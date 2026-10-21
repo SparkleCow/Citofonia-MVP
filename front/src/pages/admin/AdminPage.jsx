@@ -7,7 +7,7 @@ import { SearchIcon, UsersIcon } from '../../components/icons'
 
 const ROLE_LABELS = {
   ADMIN: 'Administracion',
-  SECURITY: 'Vigilancia',
+  CONCIERGE: 'Conserje',
   USER: 'Residente',
 }
 
@@ -18,7 +18,7 @@ const EMPTY_USER = {
   phone: '',
   documentNumber: '',
   password: '',
-  roles: ['SECURITY'],
+  roles: ['CONCIERGE'],
 }
 
 const EMPTY_COMPOSE = {
@@ -31,7 +31,7 @@ const EMPTY_COMPOSE = {
 const AUDIENCE_LABELS = {
   ALL: 'Todos los usuarios',
   RESIDENTS: 'Solo residentes',
-  SECURITY: 'Solo vigilancia',
+  CONCIERGE: 'Solo conserjeria',
   CUSTOM: 'Elegir destinatarios',
 }
 
@@ -137,7 +137,7 @@ export default function AdminPage() {
         phone: form.phone.trim() || null,
         documentNumber: form.documentNumber.trim() || null,
         password: form.password,
-        roles: ['SECURITY'],
+        roles: ['CONCIERGE'],
       })
       setForm(EMPTY_USER)
       setNotice(`Cuenta de ${form.firstName} ${form.lastName} creada y habilitada`)
@@ -270,7 +270,7 @@ export default function AdminPage() {
           <h1>Administracion</h1>
           <p className="page-sub">
             Gestiona los usuarios del edificio, aprueba registros de residentes y crea cuentas de
-            vigilancia.
+            conserjeria.
           </p>
         </div>
         <div className="tabs" role="tablist">
@@ -337,9 +337,9 @@ export default function AdminPage() {
 
       {!loading && tab === 'create' && (
         <form onSubmit={handleCreate} className="panel-form" noValidate>
-          <h2>Crear usuario de vigilancia</h2>
+          <h2>Crear usuario de conserjeria</h2>
           <p className="muted">
-            La cuenta se crea <strong>habilitada</strong> con rol vigilancia, porque la verificacion
+            La cuenta se crea <strong>habilitada</strong> con rol conserjeria, porque la verificacion
             la realiza el propio administrador. El registro de residentes se hace desde la pagina
             publica con el codigo del edificio.
           </p>
@@ -542,7 +542,7 @@ export default function AdminPage() {
                 description={
                   hasSearch
                     ? 'Ningun usuario coincide con tu busqueda. Prueba con otro nombre, email o telefono.'
-                    : 'Crea cuentas de vigilancia desde "Nuevo usuario" y habilita residentes desde "Pendientes".'
+                    : 'Crea cuentas de conserjeria desde "Nuevo usuario" y habilita residentes desde "Pendientes".'
                 }
                 action={
                   hasSearch ? (

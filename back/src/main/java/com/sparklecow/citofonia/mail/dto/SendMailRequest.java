@@ -25,7 +25,7 @@ public record SendMailRequest(
         String body,
 
         @NotNull(message = "La audiencia es obligatoria")
-        @Schema(description = "Destinatarios: todos, residentes, vigilancia o lista explicita",
+        @Schema(description = "Destinatarios: todos, residentes, consergeria o lista explicita",
                 example = "ALL")
         MailAudience audience,
 

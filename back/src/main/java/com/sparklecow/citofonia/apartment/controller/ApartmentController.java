@@ -37,11 +37,11 @@ import org.springframework.web.bind.annotation.RestController;
  * Gestion y consulta de apartamentos.
  *
  * <p><strong>Lectura</strong> (listar todos y ver sus residentes) reservada a los
- * roles {@code ADMIN} y {@code SECURITY}. <strong>Escritura</strong> (alta,
+ * roles {@code ADMIN} y {@code CONCIERGE}. <strong>Escritura</strong> (alta,
  * edicion y borrado) exclusiva de {@code ADMIN}.</p>
  */
 @Tag(name = "Apartamentos",
-        description = "Listado de apartamentos y residentes (ADMIN y SECURITY) y "
+        description = "Listado de apartamentos y residentes (ADMIN y CONCIERGE) y "
                 + "gestion de unidades (solo ADMIN).")
 @SecurityRequirement(name = "bearerAuth")
 @RestController
@@ -64,14 +64,14 @@ public class ApartmentController {
     @Operation(
             summary = "Listar apartamentos con sus residentes",
             description = "Devuelve una paginacion de los apartamentos activos, cada uno "
-                    + "con la lista de usuarios (inquilinos) vinculados. Requiere rol ADMIN o SECURITY.")
+                    + "con la lista de usuarios (inquilinos) vinculados. Requiere rol ADMIN o CONCIERGE.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Listado paginado"),
             @ApiResponse(responseCode = "401", description = "Token ausente o invalido",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
-            @ApiResponse(responseCode = "403", description = "Requiere rol ADMIN o SECURITY",
+            @ApiResponse(responseCode = "403", description = "Requiere rol ADMIN o CONCIERGE",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class)))})
-    @PreAuthorize("hasAnyRole('ADMIN','SECURITY')")
+    @PreAuthorize("hasAnyRole('ADMIN','CONCIERGE')")
     @GetMapping
     public PagedModel<ApartmentResponse> list(
             @Parameter(description = "Paginacion (page, size, sort)")
@@ -82,14 +82,14 @@ public class ApartmentController {
 
     @Operation(summary = "Detalle de un apartamento con sus residentes",
             description = "Devuelve un apartamento por su id junto a sus usuarios vinculados. "
-                    + "Requiere rol ADMIN o SECURITY.")
+                    + "Requiere rol ADMIN o CONCIERGE.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Apartamento encontrado"),
             @ApiResponse(responseCode = "404", description = "Apartamento no encontrado",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
-            @ApiResponse(responseCode = "403", description = "Requiere rol ADMIN o SECURITY",
+            @ApiResponse(responseCode = "403", description = "Requiere rol ADMIN o CONCIERGE",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class)))})
-    @PreAuthorize("hasAnyRole('ADMIN','SECURITY')")
+    @PreAuthorize("hasAnyRole('ADMIN','CONCIERGE')")
     @GetMapping("/{id}")
     public ApartmentResponse getById(
             @Parameter(description = "Id del apartamento") @PathVariable Long id) {
@@ -97,14 +97,14 @@ public class ApartmentController {
     }
 
     @Operation(summary = "Listar residentes de un apartamento",
-            description = "Devuelve solo los usuarios vinculados al apartamento. Requiere rol ADMIN o SECURITY.")
+            description = "Devuelve solo los usuarios vinculados al apartamento. Requiere rol ADMIN o CONCIERGE.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Residentes del apartamento"),
             @ApiResponse(responseCode = "404", description = "Apartamento no encontrado",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
-            @ApiResponse(responseCode = "403", description = "Requiere rol ADMIN o SECURITY",
+            @ApiResponse(responseCode = "403", description = "Requiere rol ADMIN o CONCIERGE",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class)))})
-    @PreAuthorize("hasAnyRole('ADMIN','SECURITY')")
+    @PreAuthorize("hasAnyRole('ADMIN','CONCIERGE')")
     @GetMapping("/{id}/residents")
     public List<ApartmentResidentResponse> residents(
             @Parameter(description = "Id del apartamento") @PathVariable Long id) {

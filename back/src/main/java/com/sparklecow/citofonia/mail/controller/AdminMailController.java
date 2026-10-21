@@ -37,7 +37,7 @@ public class AdminMailController {
 
     @Operation(summary = "Enviar mensaje a los buzones",
             description = "Copia el mensaje en el buzon de cada destinatario segun la audiencia "
-                    + "(todos, residentes, vigilancia o lista explicita) y notifica por WebSocket "
+                    + "(todos, residentes, consergeria o lista explicita) y notifica por WebSocket "
                     + "a los conectados. Requiere rol ADMIN.")
     @ApiResponses({
             @ApiResponse(responseCode = "201", description = "Mensaje enviado"),

@@ -11,5 +11,4 @@ public class CitofoniaApplication {
 	public static void main(String[] args) {
 		SpringApplication.run(CitofoniaApplication.class, args);
 	}
-
 }

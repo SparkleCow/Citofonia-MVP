@@ -31,7 +31,7 @@ public class MailMessage extends BaseEntity {
     @Column(nullable = false, length = 160)
     private String senderEmail;
 
-    /** Audiencia original: ALL, RESIDENTS, SECURITY o CUSTOM. */
+    /** Audiencia original: ALL, RESIDENTS, CONCIERGE o CUSTOM. */
     @Column(length = 20)
     private String audience;
 

@@ -59,7 +59,7 @@ public class UserService {
     }
 
     /**
-     * Creacion directa de un usuario de vigilancia por administracion.
+     * Creacion directa de un usuario de consergeria por administracion.
      * La cuenta nace habilitada porque el administrador ya realizo la verificacion.
      */
     @Transactional
@@ -221,7 +221,7 @@ public class UserService {
 
     /**
      * Solo los usuarios con rol {@code USER} (residentes) pueden tener un
-     * apartamento vinculado; administracion y vigilancia no tienen vivienda.
+     * apartamento vinculado; administracion y consergeria no tienen vivienda.
      *
      * @throws BadRequestException si el usuario no tiene el rol residente.
      */

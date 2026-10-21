@@ -30,7 +30,7 @@ public record UpdateUserRequest(
         String documentNumber,
 
         @Schema(description = "Nuevo conjunto de roles (reemplaza los actuales)",
-                example = "[\"USER\", \"SECURITY\"]")
+                example = "[\"USER\", \"CONCIERGE\"]")
         Set<RoleName> roles,
 
         @Schema(description = "Id de un apartamento existente a vincular. Si se omite no se modifica", example = "3")

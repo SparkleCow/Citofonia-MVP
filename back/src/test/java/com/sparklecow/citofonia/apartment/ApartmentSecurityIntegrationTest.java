@@ -18,7 +18,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
 /**
- * Pruebas de integracion de apartamentos: acceso por roles (ADMIN y SECURITY
+ * Pruebas de integracion de apartamentos: acceso por roles (ADMIN y CONCIERGE
  * pueden listar, solo ADMIN gestiona) y vinculacion de residentes.
  */
 @SpringBootTest
@@ -50,7 +50,7 @@ class ApartmentSecurityIntegrationTest {
                 .andExpect(jsonPath("$.identifier").value(identifier))
                 .andExpect(jsonPath("$.residentCount").value(0));
 
-        String listBody = mockMvc.perform(get("/api/apartments?size=100")
+        String listBody = mockMvc.perform(get("/api/apartments?size=100&sort=id,desc")
                         .header("Authorization", "Bearer " + adminToken))
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
@@ -59,21 +59,21 @@ class ApartmentSecurityIntegrationTest {
     }
 
     @Test
-    void securityRoleCanListButClientRoleCannot() throws Exception {
+    void conciergeRoleCanListButClientRoleCannot() throws Exception {
         String adminToken = loginAdmin();
         String identifier = uniqueIdentifier("S");
         createApartment(adminToken, identifier);
 
-        // Un vigilante puede listar apartamentos.
-        String securityEmail = uniqueEmail("vigilante");
-        createUser(adminToken, securityEmail, "SECURITY");
-        String securityToken = login(securityEmail);
-        String listBody = mockMvc.perform(get("/api/apartments?size=100")
-                        .header("Authorization", "Bearer " + securityToken))
+        // Un conserje puede listar apartamentos.
+        String conciergeEmail = uniqueEmail("conserje");
+        createUser(adminToken, conciergeEmail, "CONCIERGE");
+        String conciergeToken = login(conciergeEmail);
+        String listBody = mockMvc.perform(get("/api/apartments?size=100&sort=id,desc")
+                        .header("Authorization", "Bearer " + conciergeToken))
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
         assertTrue(listBody.contains("\"" + identifier + "\""),
-                "El vigilante debe poder listar los apartamentos");
+                "El conserje debe poder listar los apartamentos");
 
         // Un cliente (inquilino) no puede listarlos.
         String clientEmail = uniqueEmail("cliente");
@@ -84,7 +84,7 @@ class ApartmentSecurityIntegrationTest {
 
         // Tampoco puede crear apartamentos.
         mockMvc.perform(post("/api/apartments")
-                        .header("Authorization", "Bearer " + securityToken)
+                        .header("Authorization", "Bearer " + conciergeToken)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"identifier\":\"X-1\"}"))
                 .andExpect(status().isForbidden());
@@ -126,11 +126,11 @@ class ApartmentSecurityIntegrationTest {
         String adminToken = loginAdmin();
         long id = createApartment(adminToken, uniqueIdentifier("D"));
 
-        String securityEmail = uniqueEmail("vigilante");
-        createUser(adminToken, securityEmail, "SECURITY");
-        String securityToken = login(securityEmail);
+        String conciergeEmail = uniqueEmail("conserje");
+        createUser(adminToken, conciergeEmail, "CONCIERGE");
+        String conciergeToken = login(conciergeEmail);
 
-        mockMvc.perform(delete("/api/apartments/" + id).header("Authorization", "Bearer " + securityToken))
+        mockMvc.perform(delete("/api/apartments/" + id).header("Authorization", "Bearer " + conciergeToken))
                 .andExpect(status().isForbidden());
 
         mockMvc.perform(delete("/api/apartments/" + id).header("Authorization", "Bearer " + adminToken))

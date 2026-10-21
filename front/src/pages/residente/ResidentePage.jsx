@@ -3,10 +3,12 @@ import { notificationsApi } from '../../api/client'
 import { useAuth } from '../../context/auth-context'
 import { useCall } from '../../context/call-context'
 import { BellIcon, HomeIcon, PhoneIcon } from '../../components/icons'
+import VisitasCard from './VisitasCard'
+import CorrespondenciaCard from './CorrespondenciaCard'
 
 const ROLE_LABELS = {
   ADMIN: 'Administracion',
-  SECURITY: 'Vigilancia',
+  CONCIERGE: 'Conserje',
   USER: 'Residente',
 }
 
@@ -70,7 +72,7 @@ export default function ResidentePage() {
             <PhoneIcon />
           </span>
           <h3>Llamar a porteria</h3>
-          <p>Habla con el vigilante de turno desde tu movil, sin tener que bajar.</p>
+          <p>Habla con el conserje de turno desde tu movil, sin tener que bajar.</p>
           <button type="button" className="btn btn-primary" disabled={busy} onClick={startPortalCall}>
             <PhoneIcon />
             Llamar a porteria
@@ -142,6 +144,10 @@ export default function ResidentePage() {
           </>
         )}
       </div>
+
+      {user.apartmentIdentifier && <VisitasCard />}
+
+      {user.apartmentIdentifier && <CorrespondenciaCard />}
 
       <p className="muted" style={{ marginTop: '18px' }}>
         Estamos terminando estos servicios: en cuanto se activen apareceran aqui.

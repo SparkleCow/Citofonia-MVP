@@ -11,8 +11,8 @@ public enum MailAudience {
     /** Solo residentes (rol USER). */
     RESIDENTS,
 
-    /** Solo vigilancia (rol SECURITY). */
-    SECURITY,
+    /** Solo consergeria (rol CONCIERGE). */
+    CONCIERGE,
 
     /** Lista explicita de destinatarios. */
     CUSTOM
