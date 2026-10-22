@@ -1458,3 +1458,35 @@
   font-weight: 700;
   padding: 12px 22px;
 }
+
+/* ---------- Paginacion de listados ---------- */
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 14px;
+  flex-wrap: wrap;
+}
+
+.pagination-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.pagination-controls .btn + .btn {
+  margin-left: 0;
+}
+
+/* ---------- Panel de edicion (administracion) ---------- */
+.edit-panel {
+  margin-bottom: 18px;
+}
+
+.role-picker {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+

@@ -8,5 +8,5 @@ spring:
 
 app:
   panic:
-    # Codigo que hay que teclear para lanzar la alerta general a todos los residentes.
+    # Codigo que hay qbn'798nkmbnbnbAQue teclear para lanzar la alerta general a todos los residentes.
     code: ${PANIC_ALERT_CODE:123}

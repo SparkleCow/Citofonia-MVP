@@ -4,25 +4,32 @@ import com.sparklecow.citofonia.apartment.entity.Apartment;
 import com.sparklecow.citofonia.apartment.repository.ApartmentRepository;
 import com.sparklecow.citofonia.call.CallException;
 import com.sparklecow.citofonia.call.CallSession;
+import com.sparklecow.citofonia.call.dto.CallApartmentOption;
 import com.sparklecow.citofonia.call.dto.CallApartmentRequest;
 import com.sparklecow.citofonia.call.dto.CallEnvelope;
 import com.sparklecow.citofonia.call.dto.CallInviteRequest;
 import com.sparklecow.citofonia.call.dto.CallPanicRequest;
 import com.sparklecow.citofonia.call.dto.CallRequest;
+import com.sparklecow.citofonia.call.dto.CallResidentItem;
 import com.sparklecow.citofonia.call.dto.CallSignalRequest;
+import com.sparklecow.citofonia.call.dto.CallStaffItem;
 import com.sparklecow.citofonia.call.dto.ResidentDirectoryItem;
 import com.sparklecow.citofonia.common.exception.ApiException;
 import com.sparklecow.citofonia.config.PanicProperties;
 import com.sparklecow.citofonia.correspondence.service.CorrespondenceService;
 import com.sparklecow.citofonia.mail.service.MailService;
+import com.sparklecow.citofonia.user.entity.Role;
 import com.sparklecow.citofonia.user.entity.User;
 import com.sparklecow.citofonia.user.enums.RoleName;
 import com.sparklecow.citofonia.user.repository.UserRepository;
 import com.sparklecow.citofonia.visit.service.VisitService;
+import java.util.Comparator;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
@@ -84,7 +91,79 @@ public class CallService {
                 .toList();
     }
 
-    /** Invita a un residente a una llamada (solo consergeria/administracion). */
+    /**
+     * Apartamentos activos con el numero de residentes vinculados.
+     *
+     * <p>Primer nivel del filtrado del panel de llamadas de administracion:
+     * se elige la vivienda y despues a que resident de esa vivienda se
+     * quiere llamar.</p>
+     */
+    public List<CallApartmentOption> listCallApartments() {
+        Map<Long, Long> residentsByApartment = userRepository.findAllByDeletedFalse().stream()
+                .filter(user -> user.getApartment() != null)
+                .filter(user -> hasRole(user, RoleName.USER))
+                .collect(Collectors.groupingBy(user -> user.getApartment().getId(), Collectors.counting()));
+        return apartmentRepository.findAllByDeletedFalse().stream()
+                .sorted(Comparator.comparing(Apartment::getIdentifier, String.CASE_INSENSITIVE_ORDER))
+                .map(apartment -> new CallApartmentOption(
+                        apartment.getId(),
+                        apartment.getIdentifier(),
+                        apartment.getBlock(),
+                        apartment.getFloor(),
+                        residentsByApartment.getOrDefault(apartment.getId(), 0L).intValue()))
+                .toList();
+    }
+
+    /**
+     * Residentes vinculados a una vivienda concreta.
+     *
+     * <p>Segundo nivel del filtrado del panel de llamadas: con el apartamento
+     * ya elegido, aqui se escoge a quien llamar.</p>
+     */
+    public List<CallResidentItem> listApartmentResidents(Long apartmentId) {
+        Apartment apartment = apartmentRepository.findByIdAndDeletedFalse(apartmentId)
+                .orElseThrow(() -> new CallException("El apartamento no existe"));
+        return userRepository.findAllByApartmentIdAndDeletedFalse(apartment.getId()).stream()
+                .filter(user -> hasRole(user, RoleName.USER))
+                .map(user -> new CallResidentItem(
+                        user.getId(),
+                        user.getFirstName(),
+                        user.getLastName(),
+                        user.getEmail(),
+                        apartment.getIdentifier(),
+                        user.isOwner(),
+                        user.isOccupiesApartment(),
+                        user.isEnabled()))
+                .toList();
+    }
+
+    /**
+     * Personal de porteria (conserjeria y administracion) al que la
+     * administracion puede llamar por el citofono.
+     */
+    public List<CallStaffItem> listStaff() {
+        return userRepository.findAllByDeletedFalse().stream()
+                .filter(user -> hasRole(user, RoleName.CONCIERGE) || hasRole(user, RoleName.ADMIN))
+                .filter(User::isEnabled)
+                .sorted(Comparator.comparing((User user) -> user.getFirstName(), String.CASE_INSENSITIVE_ORDER)
+                        .thenComparing(User::getLastName, String.CASE_INSENSITIVE_ORDER))
+                .map(user -> new CallStaffItem(
+                        user.getId(),
+                        user.getFirstName(),
+                        user.getLastName(),
+                        user.getEmail(),
+                        user.getRoles().stream()
+                                .map(Role::getName)
+                                .collect(Collectors.toCollection(LinkedHashSet::new))))
+                .toList();
+    }
+
+    /**
+     * Invita a un residente (o al personal de porteria) a una llamada.
+     *
+     * <p>Solo administracion puede llamar al personal de porteria; la
+     * consergeria se limita a llamar a los residentes.</p>
+     */
     public void invite(User caller, CallInviteRequest request) {
         requireStaff(caller);
         String callId = requireText(request.callId(), "Falta el identificador de llamada");
@@ -94,9 +173,17 @@ public class CallService {
             throw new CallException("No puedes llamarte a ti mismo");
         }
         User callee = userRepository.findByEmailAndDeletedFalse(targetEmail)
-                .orElseThrow(() -> new CallException("El residente no existe o esta dado de baja"));
-        if (!hasRole(callee, RoleName.USER)) {
-            throw new CallException("Solo se puede llamar a residentes");
+                .orElseThrow(() -> new CallException("El destinatario no existe o esta dado de baja"));
+        boolean calleeIsResident = hasRole(callee, RoleName.USER);
+        boolean calleeIsStaff = hasRole(callee, RoleName.CONCIERGE) || hasRole(callee, RoleName.ADMIN);
+        if (!calleeIsResident && !calleeIsStaff) {
+            throw new CallException("Solo se puede llamar a residentes o al personal de porteria");
+        }
+        if (calleeIsStaff && !hasRole(caller, RoleName.ADMIN)) {
+            throw new CallException("Solo administracion puede llamar al personal de porteria");
+        }
+        if (!callee.isEnabled()) {
+            throw new CallException("La cuenta del destinatario esta deshabilitada");
         }
         if (sessions.containsKey(callId)) {
             throw new CallException("La llamada ya existe");
@@ -105,13 +192,15 @@ public class CallService {
             throw new CallException("Ya tienes una llamada en curso");
         }
         if (findByParticipant(targetEmail) != null) {
-            throw new CallException("El residente esta en otra llamada");
+            throw new CallException("El destinatario esta en otra llamada");
         }
-        if (request.visitId() != null) {
-            linkVisit(request.visitId(), callee);
-        }
-        if (request.correspondenceId() != null) {
-            linkCorrespondence(request.correspondenceId(), callee);
+        if (calleeIsResident) {
+            if (request.visitId() != null) {
+                linkVisit(request.visitId(), callee);
+            }
+            if (request.correspondenceId() != null) {
+                linkCorrespondence(request.correspondenceId(), callee);
+            }
         }
 
         CallSession session = new CallSession(callId, caller.getEmail(), List.of(targetEmail), false);
