@@ -1,4 +1,5 @@
 import { Client } from '@stomp/stompjs'
+import { websocketUrl } from './backend'
 
 /**
  * Hub de la conexion WebSocket (STOMP) con el backend.
@@ -26,8 +27,7 @@ const listeners = new Map()
 const subscriptions = new Map()
 
 function brokerUrl() {
-  const base = import.meta.env.VITE_API_URL || 'http://localhost:8080'
-  return `${base.replace(/^http/, 'ws')}/ws`
+  return websocketUrl('/ws')
 }
 
 function authHeaders() {

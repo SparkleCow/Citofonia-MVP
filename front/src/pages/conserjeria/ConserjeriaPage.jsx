@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react'
-import { callsApi } from '../../api/client'
+import { useEffect, useMemo, useState } from 'react'
+import { apartmentsApi, callsApi } from '../../api/client'
 import { useAuth } from '../../context/auth-context'
 import { useCall } from '../../context/call-context'
 import EmptyState from '../../components/EmptyState'
@@ -16,7 +16,9 @@ const ROLE_LABELS = {
 export default function ConserjeriaPage() {
   const { user } = useAuth()
   const { startCall, startPanicAlert, busy, call } = useCall()
+  const [apartments, setApartments] = useState([])
   const [residents, setResidents] = useState([])
+  const [selectedApartmentId, setSelectedApartmentId] = useState(null)
   const [loading, setLoading] = useState(false)
   const [loaded, setLoaded] = useState(false)
   const [error, setError] = useState(null)
@@ -29,18 +31,58 @@ export default function ConserjeriaPage() {
     if (activePanel !== 'directory' || loaded || loading) return
     ;(async () => {
       setLoading(true)
+      setError(null)
       try {
-        setResidents(await callsApi.residents())
-        setLoaded(true)
+        const [apartmentList, residentList] = await Promise.all([
+          apartmentsApi.options(),
+          callsApi.residents(),
+        ])
+        setApartments(apartmentList)
+        setResidents(residentList)
       } catch (err) {
-        setError(err.message || 'No se pudo cargar el directorio de residentes')
+        setError(err.message || 'No se pudo cargar el directorio de apartamentos')
       } finally {
         setLoading(false)
+        setLoaded(true)
       }
     })()
   }, [activePanel, loaded, loading])
 
-  const togglePanel = (panel) => setActivePanel((current) => (current === panel ? null : panel))
+  const apartmentOptions = useMemo(
+    () =>
+      [...apartments].sort((a, b) =>
+        a.identifier.localeCompare(b.identifier, 'es', { numeric: true, sensitivity: 'base' }),
+      ),
+    [apartments],
+  )
+
+  const residentsByApartment = useMemo(() => {
+    const grouped = new Map()
+    for (const resident of residents) {
+      const list = grouped.get(resident.apartmentIdentifier) || []
+      list.push(resident)
+      grouped.set(resident.apartmentIdentifier, list)
+    }
+    for (const list of grouped.values()) {
+      list.sort((a, b) =>
+        `${a.firstName} ${a.lastName}`.localeCompare(`${b.firstName} ${b.lastName}`, 'es', {
+          sensitivity: 'base',
+        }),
+      )
+    }
+    return grouped
+  }, [residents])
+
+  const selectedApartment =
+    apartmentOptions.find((apartment) => apartment.id === selectedApartmentId) || null
+  const selectedResidents = selectedApartment
+    ? residentsByApartment.get(selectedApartment.identifier) || []
+    : []
+
+  const togglePanel = (panel) => {
+    setActivePanel((current) => (current === panel ? null : panel))
+    if (panel === 'directory') setSelectedApartmentId(null)
+  }
 
   const submitPanic = (event) => {
     event.preventDefault()
@@ -102,7 +144,7 @@ export default function ConserjeriaPage() {
           {activePanel === 'visits'
             ? 'Registro y avisos de visitas al portal'
             : activePanel === 'directory'
-              ? 'Residentes con vivienda para llamar al citofono'
+              ? 'Elige un apartamento para llamar a sus residentes'
               : activePanel === 'correspondence'
                 ? 'Paquetes y cartas recibidas en el porton'
                 : 'Pulsa Visitas, Directorio o Correspondencia para empezar'}
@@ -165,48 +207,118 @@ export default function ConserjeriaPage() {
 
       {activePanel === 'directory' && (
         <div className="card" style={{ marginTop: '20px' }}>
-          <h2>Directorio de residentes</h2>
+          <h2>Directorio de apartamentos</h2>
+          <p className="muted">
+            Elige una vivienda para ver sus residentes y llamarles por el citofono.
+          </p>
 
           {error && <div className="alert alert-error">{error}</div>}
 
           {loading && (
             <div className="loading-block">
               <span className="spinner" aria-hidden="true" />
-              Cargando residentes...
+              Cargando apartamentos...
             </div>
           )}
 
-          {!loading && residents.length === 0 && !error && (
+          {!loading && !error && apartmentOptions.length === 0 && (
             <EmptyState
               icon={<UsersIcon />}
-              title="Sin residentes con vivienda"
-              description="Cuando administracion vincule residentes a una vivienda apareceran aqui para poder llamarles."
+              title="Sin apartamentos activos"
+              description="Cuando administracion registre viviendas apareceran aqui para poder llamar a sus residentes."
             />
           )}
 
-          {!loading && residents.length > 0 && (
-            <ul className="call-directory">
-              {residents.map((resident) => (
-                <li key={resident.id} className="call-directory-item">
-                  <div className="call-directory-info">
-                    <strong>
-                      {resident.firstName} {resident.lastName}
-                    </strong>
-                    <span className="muted">{resident.email}</span>
-                  </div>
-                  <span className="badge">{resident.apartmentIdentifier}</span>
+          {!loading && !error && apartmentOptions.length > 0 && !selectedApartment && (
+            <div className="apartment-grid">
+              {apartmentOptions.map((apartment) => {
+                const count = residentsByApartment.get(apartment.identifier)?.length || 0
+                const location = [
+                  apartment.block,
+                  apartment.floor != null ? `Piso ${apartment.floor}` : null,
+                ]
+                  .filter(Boolean)
+                  .join(' · ')
+
+                return (
                   <button
+                    key={apartment.id}
                     type="button"
-                    className="btn btn-primary btn-small"
-                    disabled={busy}
-                    onClick={() => startCall(resident)}
+                    className="apartment-button"
+                    onClick={() => setSelectedApartmentId(apartment.id)}
                   >
-                    <PhoneIcon />
-                    Llamar
+                    <span className="apartment-button-id">{apartment.identifier}</span>
+                    <span className="apartment-button-meta">
+                      {location || 'Sin datos de ubicacion'}
+                    </span>
+                    <span className="apartment-button-count">
+                      {count === 0
+                        ? 'Sin residentes'
+                        : count === 1
+                          ? '1 residente'
+                          : `${count} residentes`}
+                    </span>
                   </button>
-                </li>
-              ))}
-            </ul>
+                )
+              })}
+            </div>
+          )}
+
+          {!loading && !error && selectedApartment && (
+            <div className="apartment-detail">
+              <div className="apartment-detail-header">
+                <button
+                  type="button"
+                  className="btn btn-ghost btn-small"
+                  onClick={() => setSelectedApartmentId(null)}
+                >
+                  ← Volver
+                </button>
+                <div>
+                  <h3>{selectedApartment.identifier}</h3>
+                  <p className="muted">
+                    {[
+                      selectedApartment.block,
+                      selectedApartment.floor != null
+                        ? `Piso ${selectedApartment.floor}`
+                        : null,
+                    ]
+                      .filter(Boolean)
+                      .join(' · ') || 'Sin datos de ubicacion'}
+                  </p>
+                </div>
+              </div>
+
+              {selectedResidents.length === 0 ? (
+                <EmptyState
+                  icon={<UsersIcon />}
+                  title="Sin residentes en esta vivienda"
+                  description="Esta vivienda no tiene residentes vinculados en este momento."
+                />
+              ) : (
+                <ul className="call-directory">
+                  {selectedResidents.map((resident) => (
+                    <li key={resident.id} className="call-directory-item">
+                      <div className="call-directory-info">
+                        <strong>
+                          {resident.firstName} {resident.lastName}
+                        </strong>
+                        <span className="muted">{resident.email}</span>
+                      </div>
+                      <button
+                        type="button"
+                        className="btn btn-primary btn-small"
+                        disabled={busy}
+                        onClick={() => startCall(resident)}
+                      >
+                        <PhoneIcon />
+                        Llamar
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
           )}
 
           {call && (
@@ -223,7 +335,7 @@ export default function ConserjeriaPage() {
             <PhoneIcon />
           </span>
           <h3>Llamar a un residente</h3>
-          <p>Abre el directorio de residentes para llamar al citofono de quien vive en el edificio.</p>
+          <p>Abre el directorio, elige un apartamento y llama al citofono de sus residentes.</p>
         </div>
         <div className="feature-card">
           <span className="feature-icon">

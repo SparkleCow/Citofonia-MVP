@@ -7,6 +7,15 @@
   min-height: 100vh;
 }
 
+/* Respuesta inmediata al toque en moviles y tablets (sin zoom por doble toque). */
+button,
+input,
+select,
+textarea,
+a {
+  touch-action: manipulation;
+}
+
 /* ---------- Estructura interna ---------- */
 .app-shell {
   min-height: 100vh;
@@ -89,10 +98,13 @@
 /* ---------- Autenticacion ---------- */
 .auth-page {
   min-height: 100vh;
+  min-height: 100dvh;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 28px 20px;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
   background:
     radial-gradient(900px 460px at 12% -8%, var(--accent-soft), transparent 60%),
     radial-gradient(760px 420px at 108% 108%, var(--accent-soft), transparent 55%),
@@ -102,6 +114,7 @@
 .auth-card {
   width: 100%;
   max-width: 430px;
+  margin: auto;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);
@@ -332,21 +345,22 @@
 }
 
 .input-affix input {
-  padding-right: 44px;
+  padding-right: 48px;
 }
 
 .affix-btn {
   position: absolute;
-  right: 6px;
+  right: 5px;
   display: grid;
   place-items: center;
-  width: 32px;
-  height: 32px;
+  width: 36px;
+  height: 36px;
   border: none;
-  border-radius: 7px;
+  border-radius: 8px;
   background: transparent;
   color: var(--text-muted);
   cursor: pointer;
+  touch-action: manipulation;
 }
 
 .affix-btn:hover {
@@ -954,6 +968,23 @@
 }
 
 /* ---------- Responsive ---------- */
+
+/* Tablets */
+@media (max-width: 900px) {
+  .auth-page {
+    padding: 24px;
+  }
+
+  .auth-card {
+    max-width: 460px;
+  }
+
+  .auth-card-wide {
+    max-width: 680px;
+  }
+}
+
+/* Moviles */
 @media (max-width: 640px) {
   .app-header {
     padding: 10px 16px;
@@ -963,8 +994,48 @@
     padding: 20px 16px 40px;
   }
 
+  .auth-page {
+    align-items: flex-start;
+    padding: max(16px, env(safe-area-inset-top)) 16px
+      max(16px, env(safe-area-inset-bottom));
+  }
+
   .auth-card {
-    padding: 24px 20px;
+    max-width: 100%;
+    padding: 22px 18px;
+  }
+
+  .auth-title {
+    font-size: 22px;
+  }
+
+  .auth-subtitle {
+    margin-bottom: 18px;
+    font-size: 14px;
+  }
+
+  .field input,
+  .field select,
+  .field textarea,
+  .search input {
+    min-height: 46px;
+    /* 16px evita que iOS haga zoom automatico al enfocar un campo. */
+    font-size: 16px;
+  }
+
+  .input-affix input {
+    padding-right: 54px;
+  }
+
+  .affix-btn {
+    right: 3px;
+    width: 44px;
+    height: 44px;
+  }
+
+  .auth-form .btn {
+    min-height: 48px;
+    font-size: 16px;
   }
 
   .nav-user .role-chip {
@@ -973,6 +1044,13 @@
 
   .page-head h1 {
     font-size: 21px;
+  }
+}
+
+/* Pantallas muy bajas: movil horizontal o teclado abierto. */
+@media (max-height: 560px) {
+  .auth-page {
+    align-items: flex-start;
   }
 }
 
@@ -1371,6 +1449,80 @@
   white-space: nowrap;
 }
 
+.apartment-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.apartment-button {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 3px;
+  min-height: 94px;
+  padding: 13px 15px;
+  text-align: left;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease, transform 0.15s ease;
+}
+
+.apartment-button:hover {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.apartment-button:active {
+  transform: translateY(1px);
+}
+
+.apartment-button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.apartment-button-id {
+  font-size: 19px;
+  font-weight: 700;
+  color: var(--text-h);
+  letter-spacing: 0.01em;
+}
+
+.apartment-button-meta {
+  font-size: 12.5px;
+  color: var(--text-muted);
+}
+
+.apartment-button-count {
+  margin-top: auto;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--accent);
+}
+
+.apartment-detail-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin: 16px 0 14px;
+}
+
+.apartment-detail-header h3 {
+  margin: 0;
+  font-size: 19px;
+  color: var(--text-h);
+}
+
+.apartment-detail-header p {
+  margin: 2px 0 0;
+  font-size: 13px;
+}
+
 @media (max-width: 520px) {
   .call-directory-item {
     flex-wrap: wrap;
@@ -1378,6 +1530,10 @@
 
   .call-directory-item .btn {
     width: 100%;
+  }
+
+  .apartment-grid {
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
   }
 }
 

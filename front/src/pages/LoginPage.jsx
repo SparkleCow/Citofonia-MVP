@@ -62,10 +62,16 @@ export default function LoginPage() {
             <span>Email</span>
             <input
               type="email"
+              name="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="ejemplo@correo.com"
               autoComplete="email"
+              inputMode="email"
+              autoCapitalize="none"
+              autoCorrect="off"
+              spellCheck={false}
+              enterKeyHint="next"
               autoFocus
               required
             />
@@ -73,10 +79,12 @@ export default function LoginPage() {
 
           <PasswordField
             label="Contrasena"
+            name="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             placeholder="Tu contrasena"
             autoComplete="current-password"
+            enterKeyHint="go"
             required
           />
 

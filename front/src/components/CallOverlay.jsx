@@ -1,18 +1,24 @@
-import { useEffect, useRef } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useCall } from '../context/call-context'
 import { AlertIcon, PhoneIcon } from './icons'
 
-/** Timbrado del navegador mientras suena una llamada (WebAudio). */
+/**
+ * Timbrado del navegador mientras suena una llamada (WebAudio).
+ *
+ * El navegador puede crear el AudioContext suspendido si aun no ha habido
+ * interaccion con la pagina. En ese caso se reintenta al primer clic o tecla y
+ * solo se programa el pitido cuando el contexto esta realmente en marcha.
+ */
 function useRingtone(active) {
   useEffect(() => {
     if (!active) return undefined
     let context
     let interval
-    try {
-      const AudioContextClass = window.AudioContext || window.webkitAudioContext
-      if (!AudioContextClass) return undefined
-      context = new AudioContextClass()
-      const beep = () => {
+    let stopped = false
+
+    const beep = () => {
+      if (!context || stopped || context.state !== 'running') return
+      try {
         const oscillator = context.createOscillator()
         const gain = context.createGain()
         oscillator.frequency.value = 880
@@ -23,15 +29,46 @@ function useRingtone(active) {
         gain.gain.exponentialRampToValueAtTime(0.0001, context.currentTime + 0.5)
         oscillator.start()
         oscillator.stop(context.currentTime + 0.55)
+      } catch {
+        /* sin audio disponible */
       }
-      context.resume?.().catch(() => {})
-      beep()
-      interval = setInterval(beep, 1600)
+    }
+
+    const unlock = () => {
+      if (!context || stopped) return
+      const resumed = context.resume?.()
+      if (resumed?.then) {
+        resumed.then(() => beep()).catch(() => {})
+      } else {
+        beep()
+      }
+    }
+
+    try {
+      const AudioContextClass = window.AudioContext || window.webkitAudioContext
+      if (!AudioContextClass) return undefined
+      context = new AudioContextClass()
+      unlock()
+      interval = setInterval(() => {
+        if (context.state === 'suspended') {
+          unlock()
+          return
+        }
+        beep()
+      }, 1600)
+      document.addEventListener('pointerdown', unlock)
+      document.addEventListener('touchstart', unlock)
+      document.addEventListener('keydown', unlock)
     } catch {
       /* sin audio disponible */
     }
+
     return () => {
+      stopped = true
       if (interval) clearInterval(interval)
+      document.removeEventListener('pointerdown', unlock)
+      document.removeEventListener('touchstart', unlock)
+      document.removeEventListener('keydown', unlock)
       try {
         context?.close?.()
       } catch {
@@ -116,6 +153,7 @@ function useSiren(active) {
 export default function CallOverlay() {
   const { call, remoteStream, error, acceptCall, rejectCall, hangup, toggleMute, clearError } = useCall()
   const audioRef = useRef(null)
+  const [audioBlocked, setAudioBlocked] = useState(false)
 
   const isAlert = Boolean(call?.alert)
   const ringing = call?.phase === 'ringing'
@@ -123,13 +161,46 @@ export default function CallOverlay() {
   useRingtone(ringing && !isAlert)
   useSiren(ringing && isAlert)
 
+  const playRemoteAudio = useCallback(() => {
+    const element = audioRef.current
+    if (!element || !element.srcObject) return
+    element
+      .play()
+      .then(() => setAudioBlocked(false))
+      .catch((playError) => {
+        // El navegador suele bloquear el audio hasta que el usuario interactua.
+        console.warn(
+          'No se pudo reproducir el audio de la llamada:',
+          playError?.name,
+          playError?.message,
+        )
+        setAudioBlocked(true)
+      })
+  }, [])
+
   useEffect(() => {
     const element = audioRef.current
-    if (element && remoteStream) {
-      element.srcObject = remoteStream
-      element.play().catch(() => {})
+    if (!element) return
+    if (!remoteStream) {
+      element.srcObject = null
+      return
     }
-  }, [remoteStream])
+    element.srcObject = remoteStream
+    element.muted = false
+    playRemoteAudio()
+  }, [remoteStream, playRemoteAudio])
+
+  // Si el navegador bloqueo el audio, el primer gesto del usuario lo reactiva.
+  useEffect(() => {
+    if (!audioBlocked) return undefined
+    const retry = () => playRemoteAudio()
+    document.addEventListener('pointerdown', retry)
+    document.addEventListener('keydown', retry)
+    return () => {
+      document.removeEventListener('pointerdown', retry)
+      document.removeEventListener('keydown', retry)
+    }
+  }, [audioBlocked, playRemoteAudio])
 
   if (!call) {
     return error ? (
@@ -166,6 +237,14 @@ export default function CallOverlay() {
             <p className="call-peer-meta">Todos los residentes han sido avisados. El primero que atienda contesta.</p>
           )}
           {error && <p className="call-error">{error}</p>}
+          {audioBlocked && (
+            <div className="alert alert-info">
+              El navegador ha bloqueado el audio de la llamada.
+              <button type="button" className="btn btn-ghost btn-small" onClick={playRemoteAudio}>
+                Activar sonido
+              </button>
+            </div>
+          )}
 
           <audio ref={audioRef} autoPlay playsInline />
 
@@ -222,6 +301,14 @@ export default function CallOverlay() {
           </p>
         )}
         {error && <p className="call-error">{error}</p>}
+        {audioBlocked && (
+          <div className="alert alert-info">
+            El navegador ha bloqueado el audio de la llamada.
+            <button type="button" className="btn btn-ghost btn-small" onClick={playRemoteAudio}>
+              Activar sonido
+            </button>
+          </div>
+        )}
 
         <audio ref={audioRef} autoPlay playsInline />
 

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { createUuid } from '../lib/uuid'
 import { ensureRealtimeConnection, sendRealtime, subscribeRealtime } from '../lib/ws'
 import { useAuth } from './auth-context'
 import { CallContext } from './call-context'
@@ -72,6 +73,11 @@ export function CallProvider({ children }) {
   }, [])
 
   const prepareMedia = useCallback(async () => {
+    if (!navigator.mediaDevices?.getUserMedia) {
+      throw new Error(
+        'El microfono solo funciona en HTTPS o en localhost. Abre la app con https:// o prueba desde localhost.',
+      )
+    }
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false })
     localStreamRef.current = stream
     return stream
@@ -89,8 +95,19 @@ export function CallProvider({ children }) {
       }
     }
     pc.ontrack = (event) => {
-      setRemoteStream(event.streams[0])
+      // Algunos navegadores no adjuntan el stream al evento: se reconstruye
+      // a partir de la pista para que el <audio> tenga siempre que reproducir.
+      const [stream] = event.streams
+      setRemoteStream(stream ?? new MediaStream([event.track]))
       setCall((prev) => (prev ? { ...prev, phase: 'active' } : prev))
+    }
+    pc.onconnectionstatechange = () => {
+      // Diagnostico en consola: sirve para distinguir un bloqueo de autoplay
+      // de un fallo real de ICE/NAT (failed/disconnected).
+      console.info(`Llamada ${callId}: WebRTC ${pc.connectionState}`)
+      if (pc.connectionState === 'failed') {
+        setError('No se pudo conectar el audio de la llamada (fallo de red/NAT).')
+      }
     }
     pcRef.current = pc
     return pc
@@ -112,7 +129,7 @@ export function CallProvider({ children }) {
   const beginCall = useCallback(async ({ peerEmail, peerName, peerApartment, portal = false, apartment = false, alert = false, destination, body }) => {
     if (callRef.current) return
     setError(null)
-    const callId = crypto.randomUUID()
+    const callId = createUuid()
     try {
       const stream = await prepareMedia()
       const pc = createPeer(callId)
