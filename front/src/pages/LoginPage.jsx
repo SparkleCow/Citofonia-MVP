@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react'
-import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { useState } from 'react'
+import { Link, Navigate, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/auth-context'
 import { homePathForRoles } from '../utils/navigation'
 import PasswordField from '../components/PasswordField'
@@ -8,23 +8,22 @@ import { IntercomIcon } from '../components/icons'
 function friendlyError(err) {
   if (err?.status === 401) return 'Email o contrasena incorrectos. Revisa los datos e intenta de nuevo.'
   if (err?.status === 403) return 'Tu cuenta aun no esta habilitada. Contacta con la administracion del edificio.'
+  if (err?.status === 429) return err?.message || 'Demasiados intentos. Intentalo de nuevo mas tarde.'
   return err?.message || 'No se pudo iniciar sesion. Intentalo de nuevo en unos segundos.'
 }
 
 export default function LoginPage() {
   const { login, loading, isAuthenticated, user } = useAuth()
   const navigate = useNavigate()
-  const location = useLocation()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState(null)
 
-  const alreadyIn = isAuthenticated && user
-  useEffect(() => {
-    if (alreadyIn) {
-      navigate(homePathForRoles(user.roles), { replace: true })
-    }
-  }, [alreadyIn, user, navigate])
+  const home = homePathForRoles(user?.roles || [])
+
+  if (isAuthenticated && user) {
+    return <Navigate to={home} replace />
+  }
 
   async function handleSubmit(event) {
     event.preventDefault()
@@ -35,8 +34,7 @@ export default function LoginPage() {
     }
     try {
       const logged = await login(email.trim(), password)
-      const from = location.state?.from
-      navigate(from || homePathForRoles(logged.roles), { replace: true })
+      navigate(homePathForRoles(logged.roles), { replace: true })
     } catch (err) {
       setError(friendlyError(err))
     }

@@ -4,6 +4,7 @@ import com.sparklecow.citofonia.security.DatabaseUserDetailsService;
 import com.sparklecow.citofonia.security.JwtAuthenticationFilter;
 import com.sparklecow.citofonia.security.RestAccessDeniedHandler;
 import com.sparklecow.citofonia.security.RestAuthenticationEntryPoint;
+import com.sparklecow.citofonia.security.ratelimit.LoginRateLimitFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -37,6 +38,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final LoginRateLimitFilter loginRateLimitFilter;
     private final RestAuthenticationEntryPoint authenticationEntryPoint;
     private final RestAccessDeniedHandler accessDeniedHandler;
 
@@ -72,13 +74,15 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.PUT, "/api/apartments/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.PATCH, "/api/apartments/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.DELETE, "/api/apartments/**").hasRole("ADMIN")
+                        .requestMatchers("/api/attachments/**").hasAnyRole("ADMIN", "CONCIERGE")
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .anyRequest().authenticated())
                 .authenticationProvider(authenticationProvider)
                 .exceptionHandling(exceptions -> exceptions
                         .authenticationEntryPoint(authenticationEntryPoint)
                         .accessDeniedHandler(accessDeniedHandler))
-                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+                .addFilterBefore(loginRateLimitFilter, UsernamePasswordAuthenticationFilter.class)
+                .addFilterAfter(jwtAuthenticationFilter, LoginRateLimitFilter.class);
         return http.build();
     }
 

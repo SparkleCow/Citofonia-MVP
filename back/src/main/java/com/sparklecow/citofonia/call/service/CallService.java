@@ -14,6 +14,8 @@ import com.sparklecow.citofonia.call.dto.CallResidentItem;
 import com.sparklecow.citofonia.call.dto.CallSignalRequest;
 import com.sparklecow.citofonia.call.dto.CallStaffItem;
 import com.sparklecow.citofonia.call.dto.ResidentDirectoryItem;
+import com.sparklecow.citofonia.call.entity.CallOutcome;
+import com.sparklecow.citofonia.call.entity.CallType;
 import com.sparklecow.citofonia.common.exception.ApiException;
 import com.sparklecow.citofonia.config.PanicProperties;
 import com.sparklecow.citofonia.correspondence.service.CorrespondenceService;
@@ -75,6 +77,7 @@ public class CallService {
     private final CorrespondenceService correspondenceService;
     private final MailService mailService;
     private final PanicProperties panicProperties;
+    private final CallAuditService callAuditService;
 
     /** Llamadas en curso indexadas por identificador de llamada. */
     private final Map<String, CallSession> sessions = new ConcurrentHashMap<>();
@@ -205,6 +208,8 @@ public class CallService {
 
         CallSession session = new CallSession(callId, caller.getEmail(), List.of(targetEmail), false);
         sessions.put(callId, session);
+        String callerApartment = caller.getApartment() != null ? caller.getApartment().getIdentifier() : null;
+        callAuditService.recordStart(callId, CallType.DIRECT, caller.getEmail(), callerApartment, null, false, false);
         push(targetEmail, CallEnvelope.invite(callId, caller));
         log.info("Llamada {} iniciada por {} hacia {}", callId, caller.getEmail(), targetEmail);
     }
@@ -242,6 +247,9 @@ public class CallService {
         List<String> targets = residents.stream().map(User::getEmail).toList();
         CallSession session = new CallSession(callId, caller.getEmail(), targets, true);
         sessions.put(callId, session);
+        String callerApartment = caller.getApartment() != null ? caller.getApartment().getIdentifier() : null;
+        callAuditService.recordStart(callId, CallType.APARTMENT, caller.getEmail(), callerApartment,
+                apartment.getIdentifier(), true, false);
         CallEnvelope invite = CallEnvelope.invite(callId, caller);
         targets.forEach(email -> push(email, invite));
         log.info("Llamada {} de {} al apartamento {}: {} residente(s) timbrados",
@@ -276,6 +284,8 @@ public class CallService {
         List<String> targets = residents.stream().map(User::getEmail).toList();
         CallSession session = new CallSession(callId, caller.getEmail(), targets, true, true);
         sessions.put(callId, session);
+        String callerApartment = caller.getApartment() != null ? caller.getApartment().getIdentifier() : null;
+        callAuditService.recordStart(callId, CallType.PANIC, caller.getEmail(), callerApartment, null, true, true);
         CallEnvelope alert = CallEnvelope.alert(callId, caller);
         targets.forEach(email -> push(email, alert));
         log.warn("ALERTA GENERAL activada por {}: {} residente(s) avisados",
@@ -319,6 +329,8 @@ public class CallService {
 
         CallSession session = new CallSession(callId, caller.getEmail(), staff, true);
         sessions.put(callId, session);
+        String callerApartment = caller.getApartment() != null ? caller.getApartment().getIdentifier() : null;
+        callAuditService.recordStart(callId, CallType.PORTAL, caller.getEmail(), callerApartment, null, true, false);
         CallEnvelope invite = CallEnvelope.invite(callId, caller);
         staff.forEach(email -> push(email, invite));
         log.info("Llamada {} de {} ({}) a porteria: {} conserje(s) timbrados",
@@ -337,6 +349,7 @@ public class CallService {
             }
             session.answer(user.getEmail());
         }
+        callAuditService.recordAnswered(session.getCallId(), user.getEmail());
         push(session.getCallerEmail(), CallEnvelope.accept(session.getCallId(), user));
         session.getInvitedEmails().stream()
                 .filter(email -> !email.equalsIgnoreCase(user.getEmail()))
@@ -362,6 +375,7 @@ public class CallService {
             log.info("Llamada {}: {} rechaza, sigue timbrando al resto", session.getCallId(), user.getEmail());
             return;
         }
+        callAuditService.recordRejected(session.getCallId(), user.getEmail());
         sessions.remove(session.getCallId());
         push(session.getCallerEmail(), CallEnvelope.reject(session.getCallId(), user));
         log.info("Llamada {} rechazada por {}", session.getCallId(), user.getEmail());
@@ -391,6 +405,7 @@ public class CallService {
     public void end(User from, CallRequest request) {
         CallSession session = requireSession(request.callId());
         requireParticipant(session, from);
+        callAuditService.recordEnd(session.getCallId(), from.getEmail(), CallOutcome.ENDED_BY_PARTICIPANT, null);
         sessions.remove(session.getCallId());
         CallEnvelope envelope = CallEnvelope.end(session.getCallId(), from);
         session.participants().stream()
@@ -410,12 +425,18 @@ public class CallService {
             if (session.isInvited(email) && !session.isCaller(email) && !session.hasAnswered(email)) {
                 session.getInvitedEmails().removeIf(invited -> invited.equalsIgnoreCase(email));
                 if (!session.isAnswered() && session.getInvitedEmails().isEmpty()) {
+                    callAuditService.recordNoAnswer(session.getCallId());
                     sessions.remove(session.getCallId());
                     push(session.getCallerEmail(), CallEnvelope.endedWithMessage(
                             session.getCallId(), email, "Nadie ha atendido la llamada"));
                     log.info("Llamada {} cerrada: no queda nadie timbrando", session.getCallId());
                 }
                 return;
+            }
+            if (session.isAnswered()) {
+                callAuditService.recordEnd(session.getCallId(), email, CallOutcome.DISCONNECTED, "Desconexión");
+            } else {
+                callAuditService.recordNoAnswer(session.getCallId());
             }
             sessions.remove(session.getCallId());
             CallEnvelope envelope = CallEnvelope.endedByDisconnect(session.getCallId(), email);

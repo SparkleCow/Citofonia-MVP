@@ -61,15 +61,14 @@ export function AuthProvider({ children }) {
     }
   }, [persist])
 
-  // Si hay sesion guardada pero solo con datos basicos, recarga el perfil.
-  const needsProfile = Boolean(user && user.id === undefined)
+  // Recarga el perfil al tener sesion para mantener roles/estado actualizados
   useEffect(() => {
-    if (needsProfile) {
-      ;(async () => {
-        await refreshProfile()
-      })()
+    const token = localStorage.getItem(STORAGE_TOKEN)
+    if (token && user) {
+      refreshProfile()
     }
-  }, [needsProfile, refreshProfile])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []) // solo al montar
 
   const value = useMemo(
     () => ({
@@ -77,6 +76,7 @@ export function AuthProvider({ children }) {
       loading,
       isAuthenticated: Boolean(user),
       isAdmin: Boolean(user?.roles?.includes('ADMIN')),
+      isConcierge: Boolean(user?.roles?.includes('CONCIERGE')),
       login,
       logout,
       refreshProfile,
