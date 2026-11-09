@@ -74,6 +74,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.PUT, "/api/apartments/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.PATCH, "/api/apartments/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.DELETE, "/api/apartments/**").hasRole("ADMIN")
+                        // Descarga de adjuntos: autenticado; el servicio comprueba la vivienda.
+                        .requestMatchers(HttpMethod.GET, "/api/attachments/*/content").authenticated()
                         .requestMatchers("/api/attachments/**").hasAnyRole("ADMIN", "CONCIERGE")
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .anyRequest().authenticated())

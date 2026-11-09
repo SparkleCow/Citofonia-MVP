@@ -103,6 +103,14 @@ public class User extends BaseEntity implements UserDetails {
     @Column(nullable = false)
     private boolean occupiesApartment = true;
 
+    /**
+     * false mientras un autoregistro espera la aprobacion de administracion.
+     * Se crea con DEFAULT true para que las filas existentes queden aprobadas
+     * (migracion aditiva con ddl-auto=update; ver docs/migrations).
+     */
+    @Column(nullable = false, columnDefinition = "boolean default true")
+    private boolean approved = true;
+
     public User(String firstName, String lastName, String email, String password, boolean enabled) {
         this.firstName = firstName;
         this.lastName = lastName;

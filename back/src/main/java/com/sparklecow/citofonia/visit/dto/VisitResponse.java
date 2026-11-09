@@ -34,7 +34,10 @@ public record VisitResponse(
         @Schema(description = "Empresa o relacion con el resident (puede ser null)", example = "Fontaneria Ruiz")
         String visitorCompany,
 
-        @Schema(description = "Observaciones (puede ser null)", example = "Revision de la caldera")
+        @Schema(description = "Motivo de la visita (puede ser null)", example = "Revision de la caldera")
+        String reason,
+
+        @Schema(description = "Observaciones (puede ser null)", example = "Trae herramientas")
         String notes,
 
         @Schema(description = "Instante de entrada", example = "2026-10-21T10:15:00Z")
@@ -68,6 +71,7 @@ public record VisitResponse(
                 visit.getVisitorDocument(),
                 visit.getVisitorPhone(),
                 visit.getVisitorCompany(),
+                visit.getReason(),
                 visit.getNotes(),
                 visit.getEntryAt(),
                 visit.getExitAt(),

@@ -13,7 +13,12 @@ spring:
 
 app:
   panic:
-    # Codigo que hay qbn'798nkmbnbnbAQue teclear para lanzar la alerta general a todos los residentes.
-    code: ${PANIC_ALERT_CODE:123}
+    # Codigo de seguridad de la alerta general / emergencias. Solo se valida en el servidor.
+    # En produccion definir PANIC_ALERT_CODE.
+    code: ${PANIC_ALERT_CODE:2222}
+  push:
+    # Push via Expo (requiere build con projectId de EAS y credenciales FCM/APNs).
+    enabled: ${PUSH_ENABLED:false}
+    expo-url: ${EXPO_PUSH_URL:https://exp.host/--/api/v2/push/send}
   storage:
     upload-dir: ${UPLOAD_DIR:uploads}

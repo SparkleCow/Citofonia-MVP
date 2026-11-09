@@ -1,5 +1,10 @@
 package com.sparklecow.citofonia.user.service;
 
+import com.sparklecow.citofonia.user.dto.ApproveUserRequest;
+import java.text.Normalizer;
+import java.util.Comparator;
+import java.util.List;
+import org.springframework.data.domain.PageImpl;
 import com.sparklecow.citofonia.apartment.entity.Apartment;
 import com.sparklecow.citofonia.apartment.repository.ApartmentRepository;
 import com.sparklecow.citofonia.common.exception.BadRequestException;
@@ -49,7 +54,78 @@ public class UserService {
     /** Cuentas pendientes de habilitacion: creadas por autoregistro y aun deshabilitadas. */
     @Transactional(readOnly = true)
     public Page<UserResponse> listPending(Pageable pageable) {
-        return userRepository.findAllByDeletedFalseAndEnabledFalse(pageable).map(UserResponse::from);
+        return userRepository.findAllByDeletedFalseAndApprovedFalse(pageable).map(UserResponse::from);
+    }
+
+    /**
+     * Listado con filtros opcionales. El volumen de una copropiedad es pequeno, asi que se
+     * filtra en memoria sobre los usuarios activos y se pagina el resultado.
+     *
+     * @param query       texto libre: nombre, apellido, email o apartamento
+     * @param role        ADMIN, CONCIERGE o USER (residente)
+     * @param apartmentId solo usuarios vinculados a ese apartamento
+     * @param status      ACTIVE, DISABLED o PENDING
+     */
+    @Transactional(readOnly = true)
+    public Page<UserResponse> search(Pageable pageable, String query, RoleName role, Long apartmentId, String status) {
+        String term = query == null ? "" : normalizeText(query);
+        List<User> filtered = userRepository.findAllByDeletedFalse().stream()
+                .filter(user -> role == null || user.getRoles().stream().anyMatch(r -> r.getName() == role))
+                .filter(user -> apartmentId == null
+                        || (user.getApartment() != null && apartmentId.equals(user.getApartment().getId())))
+                .filter(user -> matchesStatus(user, status))
+                .filter(user -> term.isEmpty() || normalizeText(String.join(" ",
+                        user.getFirstName(), user.getLastName(), user.getEmail(),
+                        user.getApartment() != null ? user.getApartment().getIdentifier() : "")).contains(term))
+                .sorted(Comparator.comparing((User user) -> normalizeText(user.getFirstName()))
+                        .thenComparing(user -> normalizeText(user.getLastName())))
+                .toList();
+        int from = (int) Math.min(pageable.getOffset(), filtered.size());
+        int to = Math.min(from + pageable.getPageSize(), filtered.size());
+        return new PageImpl<>(filtered.subList(from, to), pageable, filtered.size()).map(UserResponse::from);
+    }
+
+    /** Aprueba un registro pendiente: queda aprobado y activo. Los residentes salen con apartamento. */
+    @Transactional
+    public UserResponse approve(Long id, ApproveUserRequest request, User actor) {
+        User user = findActiveUser(id);
+        if (user.isApproved()) {
+            throw new BadRequestException("El usuario no tiene un registro pendiente");
+        }
+        if (request != null && request.apartmentId() != null) {
+            requireResidentRole(user);
+            user.setApartment(findApartment(request.apartmentId()));
+        }
+        if (request != null && request.owner() != null) {
+            user.setOwner(request.owner());
+        }
+        if (request != null && request.occupiesApartment() != null) {
+            user.setOccupiesApartment(request.occupiesApartment());
+        }
+        if (!user.isOwner()) {
+            user.setOccupiesApartment(true);
+        }
+        if (isPureResident(user) && user.getApartment() == null) {
+            throw new BadRequestException("Asigna un apartamento al residente antes de aprobarlo");
+        }
+        user.setApproved(true);
+        user.setEnabled(true);
+        user.setUpdatedByEmail(actor.getEmail());
+        log.info("Registro aprobado por {}: {}", actor.getEmail(), user.getEmail());
+        return UserResponse.from(user);
+    }
+
+    /** Rechaza un registro pendiente (borrado logico: no se pierde el historico). */
+    @Transactional
+    public void reject(Long id, User actor) {
+        User user = findActiveUser(id);
+        if (user.isApproved()) {
+            throw new BadRequestException("Solo se pueden rechazar registros pendientes");
+        }
+        user.setDeleted(true);
+        user.setEnabled(false);
+        user.setUpdatedByEmail(actor.getEmail());
+        log.info("Registro rechazado por {}: {}", actor.getEmail(), user.getEmail());
     }
 
     /** Detalle de un usuario activo por id. */
@@ -87,6 +163,14 @@ public class UserService {
         if (request.apartmentId() != null) {
             requireResidentRole(user);
             user.setApartment(findApartment(request.apartmentId()));
+        }
+        if (isPureResident(user) && user.getApartment() == null) {
+            throw new BadRequestException("Los residentes deben tener un apartamento asignado");
+        }
+        if (hasResidentRole(user)) {
+            boolean owner = Boolean.TRUE.equals(request.owner());
+            user.setOwner(owner);
+            user.setOccupiesApartment(!owner || !Boolean.FALSE.equals(request.occupiesApartment()));
         }
         user.setCreatedByEmail(actor.getEmail());
         user.setUpdatedByEmail(actor.getEmail());
@@ -137,6 +221,9 @@ public class UserService {
         if (!user.isOwner()) {
             user.setOccupiesApartment(true);
         }
+        if (isPureResident(user) && user.getApartment() == null && user.isEnabled()) {
+            throw new BadRequestException("Los residentes deben tener un apartamento asignado");
+        }
         user.setUpdatedByEmail(actor.getEmail());
         return UserResponse.from(user);
     }
@@ -158,6 +245,12 @@ public class UserService {
             user.setApartment(null);
             user.setOwner(false);
             user.setOccupiesApartment(true);
+            if (isPureResident(user) && user.isEnabled()) {
+                // Un residente activo siempre tiene vivienda: al quitarlo se desactiva su cuenta
+                // hasta que se le asigne otra (no se borra nada).
+                user.setEnabled(false);
+                log.info("Residente {} desactivado al quedar sin apartamento", user.getEmail());
+            }
         } else {
             requireResidentRole(user);
             user.setApartment(findApartment(apartmentId));
@@ -172,6 +265,12 @@ public class UserService {
     @Transactional
     public UserResponse enable(Long id, User actor) {
         User user = findActiveUser(id);
+        if (!user.isApproved()) {
+            throw new BadRequestException("El registro esta pendiente: apruebalo desde Solicitudes pendientes");
+        }
+        if (isPureResident(user) && user.getApartment() == null) {
+            throw new BadRequestException("Asigna un apartamento al residente antes de activarlo");
+        }
         user.setEnabled(true);
         user.setUpdatedByEmail(actor.getEmail());
         log.info("Usuario habilitado por {}: {}", actor.getEmail(), user.getEmail());
@@ -213,6 +312,34 @@ public class UserService {
     private Apartment findApartment(Long apartmentId) {
         return apartmentRepository.findByIdAndDeletedFalse(apartmentId)
                 .orElseThrow(() -> new NotFoundException("Apartamento no encontrado con id " + apartmentId));
+    }
+
+    /** Residente "puro": rol USER sin rol de personal (los admins tambien llevan USER). */
+    private boolean isPureResident(User user) {
+        return hasResidentRole(user) && user.getRoles().stream()
+                .noneMatch(role -> role.getName() == RoleName.ADMIN || role.getName() == RoleName.CONCIERGE);
+    }
+
+    private boolean matchesStatus(User user, String status) {
+        if (status == null || status.isBlank()) {
+            return true;
+        }
+        return switch (status.trim().toUpperCase()) {
+            case "PENDING" -> !user.isApproved();
+            case "ACTIVE" -> user.isApproved() && user.isEnabled();
+            case "DISABLED" -> user.isApproved() && !user.isEnabled();
+            default -> true;
+        };
+    }
+
+    private static String normalizeText(String value) {
+        if (value == null) {
+            return "";
+        }
+        return Normalizer.normalize(value, Normalizer.Form.NFD)
+                .replaceAll("\\p{M}", "")
+                .toLowerCase()
+                .trim();
     }
 
     private boolean hasResidentRole(User user) {

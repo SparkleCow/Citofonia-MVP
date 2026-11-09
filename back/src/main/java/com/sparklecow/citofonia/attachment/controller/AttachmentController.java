@@ -8,10 +8,14 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.springframework.core.io.Resource;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -43,5 +47,20 @@ public class AttachmentController {
     public List<AttachmentResponse> list(@RequestParam("entityType") String entityType,
                                         @RequestParam("entityId") Long entityId) {
         return attachmentService.list(entityType, entityId);
+    }
+
+    @Operation(summary = "Descargar adjunto",
+            description = "Devuelve el contenido del archivo. Personal: cualquier adjunto. Residentes: solo los "
+                    + "de visitas o correspondencia de su propia vivienda.")
+    @GetMapping("/{id}/content")
+    public ResponseEntity<Resource> content(@PathVariable Long id, @AuthenticationPrincipal User currentUser) {
+        AttachmentService.AttachmentContent file = attachmentService.content(id, currentUser);
+        MediaType type = file.contentType() != null
+                ? MediaType.parseMediaType(file.contentType())
+                : MediaType.APPLICATION_OCTET_STREAM;
+        return ResponseEntity.ok()
+                .contentType(type)
+                .header(HttpHeaders.CACHE_CONTROL, "private, max-age=3600")
+                .body(file.resource());
     }
 }

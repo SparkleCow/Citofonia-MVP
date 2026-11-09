@@ -57,6 +57,10 @@ public class Visit extends BaseEntity {
     private String visitorCompany;
 
     /** Motivo de la visita y observaciones de consergeria (opcional). */
+    /** Motivo de la visita (separado de las observaciones). Columna nueva y nullable. */
+    @Column(length = 200)
+    private String reason;
+
     @Column(length = 500)
     private String notes;
 

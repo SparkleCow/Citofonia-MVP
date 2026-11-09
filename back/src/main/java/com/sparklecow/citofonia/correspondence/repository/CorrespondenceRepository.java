@@ -14,6 +14,10 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface CorrespondenceRepository extends JpaRepository<Correspondence, Long> {
 
+    long countByStatusIn(java.util.Collection<com.sparklecow.citofonia.correspondence.entity.CorrespondenceStatus> statuses);
+
+    List<Correspondence> findTop5ByOrderByCreatedAtDesc();
+
     /** Correspondencia del edificio, de la mas reciente a la mas antigua. */
     Page<Correspondence> findAllByOrderByReceivedAtDesc(Pageable pageable);
 

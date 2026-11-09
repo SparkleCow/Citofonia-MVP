@@ -100,8 +100,11 @@ public class ApartmentService {
     @Transactional
     public void delete(Long id) {
         Apartment apartment = findActive(id);
-        userRepository.findAllByApartmentIdAndDeletedFalse(id)
-                .forEach(user -> user.setApartment(null));
+        long linked = userRepository.findAllByApartmentIdAndDeletedFalse(id).size();
+        if (linked > 0) {
+            throw new ConflictException("El apartamento tiene " + linked
+                    + " residente(s) vinculados. Reasignalos o quitalos antes de eliminarlo.");
+        }
         apartment.setDeleted(true);
         log.info("Apartamento eliminado logicamente: {}", apartment.getIdentifier());
     }

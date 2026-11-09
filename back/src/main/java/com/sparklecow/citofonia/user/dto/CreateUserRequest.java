@@ -51,5 +51,11 @@ public record CreateUserRequest(
         Set<RoleName> roles,
 
         @Schema(description = "Id del apartamento a vincular (opcional)", example = "3")
-        Long apartmentId) {
+        Long apartmentId,
+
+        @Schema(description = "true si es propietario (false = arrendatario). Solo residentes", example = "false")
+        Boolean owner,
+
+        @Schema(description = "Solo propietarios: true si reside en la vivienda", example = "true")
+        Boolean occupiesApartment) {
 }

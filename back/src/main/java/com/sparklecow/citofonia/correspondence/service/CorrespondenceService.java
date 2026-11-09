@@ -1,5 +1,6 @@
 package com.sparklecow.citofonia.correspondence.service;
 
+import com.sparklecow.citofonia.attachment.repository.AttachmentRepository;
 import com.sparklecow.citofonia.apartment.entity.Apartment;
 import com.sparklecow.citofonia.apartment.repository.ApartmentRepository;
 import com.sparklecow.citofonia.common.exception.BadRequestException;
@@ -53,6 +54,10 @@ public class CorrespondenceService {
     private final ApartmentRepository apartmentRepository;
     private final UserRepository userRepository;
     private final MailService mailService;
+    private final AttachmentRepository attachmentRepository;
+
+    /** Tipo de entidad con el que se guardan las fotos de los paquetes. */
+    public static final String PHOTO_ENTITY_TYPE = "CORRESPONDENCE";
 
     /** Anota una correspondencia. Solo consergeria o administracion. */
     @Transactional
@@ -79,7 +84,7 @@ public class CorrespondenceService {
                 actor.getEmail()));
         log.info("Correspondencia anotada por {} para {} ({}): {}",
                 actor.getEmail(), apartment.getIdentifier(), correspondence.getId(), correspondence.getType());
-        return CorrespondenceResponse.from(correspondence);
+        return toResponse(correspondence);
     }
 
     /** Listado de correspondencia del edificio (opcionalmente de una vivienda). */
@@ -88,7 +93,7 @@ public class CorrespondenceService {
         Page<Correspondence> page = apartmentId == null
                 ? correspondenceRepository.findAllByOrderByReceivedAtDesc(pageable)
                 : correspondenceRepository.findAllByApartmentIdOrderByReceivedAtDesc(apartmentId, pageable);
-        return page.map(CorrespondenceResponse::from);
+        return page.map(this::toResponse);
     }
 
     /**
@@ -104,7 +109,7 @@ public class CorrespondenceService {
         }
         return correspondenceRepository
                 .findAllByApartmentIdOrderByReceivedAtDesc(currentUser.getApartment().getId(), pageable)
-                .map(CorrespondenceResponse::from);
+                .map(this::toResponse);
     }
 
     /** Detalle de una correspondencia. Staff o residente de la vivienda. */
@@ -114,7 +119,7 @@ public class CorrespondenceService {
         if (!isStaff(currentUser) && !livesIn(currentUser, correspondence.getApartment())) {
             throw new ForbiddenException("No puedes consultar la correspondencia de otra vivienda");
         }
-        return CorrespondenceResponse.from(correspondence);
+        return toResponse(correspondence);
     }
 
     /** Residentes de una vivienda que pueden recibir la correspondencia. */
@@ -147,7 +152,7 @@ public class CorrespondenceService {
         correspondenceRepository.save(correspondence);
         log.info("Correspondencia {} avisada a {} residente(s) por {}",
                 correspondence.getId(), sent.recipientCount(), actor.getEmail());
-        return CorrespondenceResponse.from(correspondence);
+        return toResponse(correspondence);
     }
 
     /**
@@ -176,7 +181,7 @@ public class CorrespondenceService {
         }
         correspondenceRepository.save(correspondence);
         log.info("Correspondencia {} guardada en porteria por {}", correspondence.getId(), actor.getEmail());
-        return CorrespondenceResponse.from(correspondence);
+        return toResponse(correspondence);
     }
 
     /** Cambia el estado de la correspondencia (entregada, devuelta...). */
@@ -194,7 +199,7 @@ public class CorrespondenceService {
         correspondenceRepository.save(correspondence);
         log.info("Correspondencia {} actualizada a {} por {}",
                 correspondence.getId(), request.status(), actor.getEmail());
-        return CorrespondenceResponse.from(correspondence);
+        return toResponse(correspondence);
     }
 
     /**
@@ -346,6 +351,14 @@ public class CorrespondenceService {
             return List.of();
         }
         return List.of(value.split(","));
+    }
+
+    private CorrespondenceResponse toResponse(Correspondence correspondence) {
+        List<Long> photoIds = attachmentRepository
+                .findByEntityTypeAndEntityId(PHOTO_ENTITY_TYPE, correspondence.getId()).stream()
+                .map(attachment -> attachment.getId())
+                .toList();
+        return CorrespondenceResponse.from(correspondence, photoIds);
     }
 
     private String normalize(String value) {

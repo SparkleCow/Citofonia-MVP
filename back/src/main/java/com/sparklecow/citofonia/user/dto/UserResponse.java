@@ -65,7 +65,10 @@ public record UserResponse(
         String updatedByEmail,
 
         @Schema(description = "Ultimo inicio de sesion (null si nunca inicio)")
-        Instant lastLoginAt) {
+        Instant lastLoginAt,
+
+        @Schema(description = "false si es un registro pendiente de aprobacion")
+        boolean approved) {
 
     public static UserResponse from(User user) {
         return new UserResponse(
@@ -86,6 +89,7 @@ public record UserResponse(
                 user.getUpdatedAt(),
                 user.getCreatedByEmail(),
                 user.getUpdatedByEmail(),
-                user.getLastLoginAt());
+                user.getLastLoginAt(),
+                user.isApproved());
     }
 }

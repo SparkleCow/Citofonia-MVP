@@ -1,11 +1,13 @@
 package com.sparklecow.citofonia.user.controller;
 
 import com.sparklecow.citofonia.common.exception.ErrorResponse;
+import com.sparklecow.citofonia.user.dto.ApproveUserRequest;
 import com.sparklecow.citofonia.user.dto.AssignApartmentRequest;
 import com.sparklecow.citofonia.user.dto.CreateUserRequest;
 import com.sparklecow.citofonia.user.dto.UpdateUserRequest;
 import com.sparklecow.citofonia.user.dto.UserResponse;
 import com.sparklecow.citofonia.user.entity.User;
+import com.sparklecow.citofonia.user.enums.RoleName;
 import com.sparklecow.citofonia.user.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -32,6 +34,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -58,8 +61,19 @@ public class UserController {
     @GetMapping
     public PagedModel<UserResponse> list(
             @Parameter(description = "Paginacion (page, size, sort)")
-            @PageableDefault(size = 20) Pageable pageable) {
-        Page<UserResponse> page = userService.list(pageable);
+            @PageableDefault(size = 20) Pageable pageable,
+            @Parameter(description = "Texto libre: nombre, email o apartamento")
+            @RequestParam(required = false) String q,
+            @Parameter(description = "Rol: ADMIN, CONCIERGE o USER (residente)")
+            @RequestParam(required = false) RoleName role,
+            @Parameter(description = "Solo usuarios de este apartamento")
+            @RequestParam(required = false) Long apartmentId,
+            @Parameter(description = "Estado: ACTIVE, DISABLED o PENDING")
+            @RequestParam(required = false) String status) {
+        boolean filtered = q != null || role != null || apartmentId != null || status != null;
+        Page<UserResponse> page = filtered
+                ? userService.search(pageable, q, role, apartmentId, status)
+                : userService.list(pageable);
         return new PagedModel<>(page);
     }
 
@@ -146,6 +160,25 @@ public class UserController {
             @RequestBody AssignApartmentRequest request,
             @AuthenticationPrincipal User currentUser) {
         return userService.assignApartment(id, request.apartmentId(), currentUser);
+    }
+
+    @Operation(summary = "Aprobar registro pendiente",
+            description = "Aprueba y activa una cuenta de autoregistro. Los residentes deben quedar con "
+                    + "apartamento (el elegido al registrarse o el indicado aqui).")
+    @PostMapping("/{id}/approve")
+    public UserResponse approve(@Parameter(description = "Id del usuario") @PathVariable Long id,
+                                @RequestBody(required = false) ApproveUserRequest request,
+                                @AuthenticationPrincipal User currentUser) {
+        return userService.approve(id, request, currentUser);
+    }
+
+    @Operation(summary = "Rechazar registro pendiente",
+            description = "Descarta una solicitud de registro (borrado logico).")
+    @PostMapping("/{id}/reject")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void reject(@Parameter(description = "Id del usuario") @PathVariable Long id,
+                       @AuthenticationPrincipal User currentUser) {
+        userService.reject(id, currentUser);
     }
 
     @Operation(

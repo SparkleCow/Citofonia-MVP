@@ -113,6 +113,8 @@ public class AuthService {
         }
 
         user.getRoles().add(resolveRole(RoleName.USER));
+        // Inactivo y pendiente hasta que un administrador lo apruebe.
+        user.setApproved(false);
         User saved = userRepository.save(user);
 
         log.info("Nuevo residente registrado (pendiente de habilitacion): {}", saved.getEmail());
@@ -128,7 +130,13 @@ public class AuthService {
             return authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(email, password));
         } catch (DisabledException ex) {
-            throw new ForbiddenException("La cuenta esta deshabilitada. Contacte con un administrador.");
+            boolean pending = email != null && userRepository
+                    .findByEmailAndDeletedFalse(email.trim().toLowerCase())
+                    .map(user -> !user.isApproved())
+                    .orElse(false);
+            throw new ForbiddenException(pending
+                    ? "Tu registro esta pendiente de aprobacion por la administracion."
+                    : "La cuenta esta deshabilitada. Contacte con un administrador.");
         } catch (LockedException ex) {
             throw new ForbiddenException("La cuenta esta bloqueada o eliminada.");
         } catch (BadCredentialsException ex) {

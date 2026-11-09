@@ -14,6 +14,10 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface VisitRepository extends JpaRepository<Visit, Long> {
 
+    long countByStatusIn(java.util.Collection<com.sparklecow.citofonia.visit.entity.VisitStatus> statuses);
+
+    List<Visit> findTop5ByOrderByCreatedAtDesc();
+
     /** Visitas del edificio, de la mas reciente a la mas antigua. */
     Page<Visit> findAllByOrderByEntryAtDesc(Pageable pageable);
 

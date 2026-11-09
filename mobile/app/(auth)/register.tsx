@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { View, Text, TextInput, Pressable, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
+import { View, Text, TextInput, Pressable, KeyboardAvoidingView, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Link } from 'expo-router';
 import { useAuth } from '@/context/AuthContext';
 import { s } from '@/theme/styles';
+import { LIMITS, digitsOnly, validators } from '@/lib/validation';
 
 export default function Register() {
   const { register } = useAuth();
@@ -19,6 +20,12 @@ export default function Register() {
   const onSubmit = async () => {
     setErr(null);
     if (!form.firstName || !form.lastName || !form.email || !form.password || !form.phone || !form.registrationCode) return setErr('Campos obligatorios incompletos');
+    const invalid =
+      validators.email(form.email) ??
+      validators.password(form.password) ??
+      validators.phone(form.phone, { required: true }) ??
+      validators.document(form.documentNumber);
+    if (invalid) return setErr(invalid);
     setLoading(true);
     try {
       const payload: any = { ...form };
@@ -56,7 +63,7 @@ export default function Register() {
 
   return (
     <SafeAreaView style={s.safe}>
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={s.screen}>
+      <KeyboardAvoidingView behavior="padding" style={s.screen}>
         <ScrollView contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', padding: 16 }} keyboardShouldPersistTaps="handled">
           <View style={[s.card, { maxWidth: 520, alignSelf: 'center' }]}>
             <Text style={s.title}>Registro de residente</Text>
@@ -71,13 +78,13 @@ export default function Register() {
             <Text style={s.label}>Contraseña *</Text>
             <TextInput style={s.input} secureTextEntry onChangeText={v => set('password', v)} />
             <Text style={s.label}>Teléfono *</Text>
-            <TextInput style={s.input} keyboardType="phone-pad" onChangeText={v => set('phone', v)} />
-            <Text style={s.label}>Documento</Text>
-            <TextInput style={s.input} onChangeText={v => set('documentNumber', v)} />
+            <TextInput style={s.input} keyboardType="number-pad" inputMode="numeric" maxLength={LIMITS.phone.max} value={form.phone} onChangeText={v => set('phone', digitsOnly(v, LIMITS.phone.max))} />
+            <Text style={s.label}>Cédula</Text>
+            <TextInput style={s.input} keyboardType="number-pad" inputMode="numeric" maxLength={LIMITS.document.max} value={form.documentNumber} onChangeText={v => set('documentNumber', digitsOnly(v, LIMITS.document.max))} />
             <Text style={s.label}>Código de registro *</Text>
             <TextInput style={s.input} autoCapitalize="none" onChangeText={v => set('registrationCode', v)} />
             <Text style={s.label}>ID Apartamento</Text>
-            <TextInput style={s.input} keyboardType="numeric" onChangeText={v => set('apartmentId', v)} />
+            <TextInput style={s.input} keyboardType="number-pad" inputMode="numeric" maxLength={LIMITS.apartment.max} value={form.apartmentId} onChangeText={v => set('apartmentId', digitsOnly(v, LIMITS.apartment.max))} />
             {err ? <Text style={s.error}>{err}</Text> : null}
             <Pressable style={s.btn} onPress={onSubmit} disabled={loading}>
               <Text style={s.btnText}>{loading ? 'Registrando...' : 'Registrarse'}</Text>

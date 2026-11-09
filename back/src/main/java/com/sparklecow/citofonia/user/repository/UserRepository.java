@@ -28,6 +28,9 @@ public interface UserRepository extends JpaRepository<User, Long> {
     /** Cuentas creadas por autoregistro pendientes de habilitacion. */
     Page<User> findAllByDeletedFalseAndEnabledFalse(Pageable pageable);
 
+    /** Registros pendientes: no aprobados (distinto de "deshabilitado por un admin"). */
+    Page<User> findAllByDeletedFalseAndApprovedFalse(Pageable pageable);
+
     boolean existsByDocumentNumberIgnoreCase(String documentNumber);
 
     /** Residentes activos de un apartamento. */

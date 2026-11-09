@@ -1,21 +1,44 @@
 {
   "expo": {
-    "name": "Citonofia Facil",
+    "name": "Citofonía Fácil",
     "slug": "citofonia-facil",
     "scheme": "citofonia-facil",
     "version": "1.0.0",
     "orientation": "default",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
     "ios": {
       "supportsTablet": true
     },
     "android": {
       "supportsTablet": true
     },
+    "web": {
+      "bundler": "metro"
+    },
     "plugins": [
       "expo-router",
       "expo-status-bar",
-      "expo-secure-store"
+      "expo-secure-store",
+      [
+        "@config-plugins/react-native-webrtc",
+        {
+          "microphonePermission": "Citofonía Fácil usa el micrófono para las llamadas del citófono."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Citofonía Fácil adjunta fotos de los paquetes recibidos en portería.",
+          "cameraPermission": "Citofonía Fácil usa la cámara para fotografiar los paquetes recibidos."
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "color": "#1854dc"
+        }
+      ]
     ]
   }
 }

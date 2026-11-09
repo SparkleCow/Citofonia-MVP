@@ -104,6 +104,7 @@ public class Correspondence extends BaseEntity {
         this.apartment = apartment;
         this.type = type;
         this.description = description;
+        this.description = description;
         this.carrier = carrier;
         this.trackingNumber = trackingNumber;
         this.recipient = recipient;

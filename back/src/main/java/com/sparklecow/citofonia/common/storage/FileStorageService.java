@@ -1,5 +1,8 @@
 package com.sparklecow.citofonia.common.storage;
 
+import com.sparklecow.citofonia.common.exception.NotFoundException;
+import org.springframework.core.io.FileSystemResource;
+import org.springframework.core.io.Resource;
 import com.sparklecow.citofonia.config.StorageProperties;
 import jakarta.annotation.PostConstruct;
 import java.io.IOException;
@@ -58,6 +61,15 @@ public class FileStorageService {
         } catch (IOException e) {
             throw new IllegalStateException("No se pudo guardar el archivo", e);
         }
+    }
+
+    /** Carga un archivo guardado; rechaza rutas que salgan del directorio de uploads. */
+    public Resource load(String relativePath) {
+        Path file = rootLocation.resolve(relativePath).normalize();
+        if (!file.startsWith(rootLocation.normalize()) || !Files.isReadable(file)) {
+            throw new NotFoundException("Archivo no disponible");
+        }
+        return new FileSystemResource(file);
     }
 
     public record StoredFile(String filename, String originalFilename, String relativePath,

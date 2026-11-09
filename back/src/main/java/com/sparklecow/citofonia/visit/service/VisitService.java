@@ -65,6 +65,7 @@ public class VisitService {
                 normalize(request.notes()),
                 entryAt,
                 actor.getEmail()));
+        visit.setReason(normalize(request.reason()));
         log.info("Visita anotada por {} para {} ({}): {}",
                 actor.getEmail(), apartment.getIdentifier(), visit.getId(), visit.getVisitorName());
         return VisitResponse.from(visit);
@@ -232,8 +233,11 @@ public class VisitService {
         if (visit.getVisitorPhone() != null) {
             body.append("\nTelefono: ").append(visit.getVisitorPhone());
         }
+        if (visit.getReason() != null) {
+            body.append("\nMotivo: ").append(visit.getReason());
+        }
         if (visit.getNotes() != null) {
-            body.append("\nMotivo: ").append(visit.getNotes());
+            body.append("\nObservaciones: ").append(visit.getNotes());
         }
         body.append("\n\nRegistrado por consergeria.");
         return body.toString();

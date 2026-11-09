@@ -54,7 +54,7 @@ public class MailService {
     /** Guarda el mensaje y reparte una copia por cada buzon destinatario. */
     @Transactional
     public MailSendResponse send(SendMailRequest request, User actor) {
-        List<User> recipients = resolveRecipients(request);
+        List<User> recipients = resolveRecipients(request, actor);
         if (recipients.isEmpty()) {
             throw new BadRequestException("No hay destinatarios para esa audiencia");
         }
@@ -149,14 +149,32 @@ public class MailService {
                 .orElseGet(() -> mailboxRepository.save(new Mailbox(user)));
     }
 
-    private List<User> resolveRecipients(SendMailRequest request) {
-        List<User> active = userRepository.findAllByDeletedFalse();
+    /**
+     * Destinatarios reales: cuentas no borradas, aprobadas y activas, nunca el propio remitente
+     * (los registros pendientes o deshabilitados no reciben comunicaciones del edificio).
+     */
+    private List<User> resolveRecipients(SendMailRequest request, User actor) {
+        List<User> active = userRepository.findAllByDeletedFalse().stream()
+                .filter(User::isApproved)
+                .filter(User::isEnabled)
+                .filter(u -> actor == null || !u.getId().equals(actor.getId()))
+                .toList();
         return switch (request.audience()) {
             case ALL -> active;
-            case RESIDENTS -> active.stream().filter(u -> hasRole(u, RoleName.USER)).toList();
+            case RESIDENTS -> active.stream().filter(this::isResident).toList();
             case CONCIERGE -> active.stream().filter(u -> hasRole(u, RoleName.CONCIERGE)).toList();
+            case RESIDENTS_CONCIERGE -> active.stream()
+                    .filter(u -> isResident(u) || hasRole(u, RoleName.CONCIERGE))
+                    .toList();
             case CUSTOM -> resolveCustom(request.recipientIds(), active);
         };
+    }
+
+    /** Residente "puro": rol USER sin rol de personal (los admins tambien llevan USER). */
+    private boolean isResident(User user) {
+        return hasRole(user, RoleName.USER)
+                && !hasRole(user, RoleName.ADMIN)
+                && !hasRole(user, RoleName.CONCIERGE);
     }
 
     private List<User> resolveCustom(List<Long> recipientIds, List<User> active) {

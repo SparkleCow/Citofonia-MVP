@@ -73,7 +73,10 @@ public record CorrespondenceResponse(
         String registeredByEmail,
 
         @Schema(description = "Instante de creacion del registro", example = "2026-10-21T10:15:00Z")
-        Instant createdAt) {
+        Instant createdAt,
+
+        @Schema(description = "Ids de las fotos adjuntas (GET /api/attachments/{id}/content)")
+        List<Long> photoIds) {
 
     public static CorrespondenceResponse from(Correspondence correspondence) {
         return new CorrespondenceResponse(
@@ -98,7 +101,18 @@ public record CorrespondenceResponse(
                 correspondence.getCollectedAt(),
                 correspondence.getNotes(),
                 correspondence.getRegisteredByEmail(),
-                correspondence.getCreatedAt());
+                correspondence.getCreatedAt(),
+                List.of());
+    }
+
+    /** Igual que {@link #from(Correspondence)} pero con las fotos adjuntas. */
+    public static CorrespondenceResponse from(Correspondence correspondence, List<Long> photoIds) {
+        CorrespondenceResponse base = from(correspondence);
+        return new CorrespondenceResponse(base.id(), base.apartmentId(), base.apartmentIdentifier(), base.type(),
+                base.description(), base.carrier(), base.trackingNumber(), base.recipientId(),
+                base.recipientName(), base.recipientEmail(), base.delivery(), base.status(), base.receivedAt(),
+                base.notifiedAt(), base.notifiedTo(), base.collectedAt(), base.notes(),
+                base.registeredByEmail(), base.createdAt(), photoIds == null ? List.of() : photoIds);
     }
 
     private static List<String> splitEmails(String value) {

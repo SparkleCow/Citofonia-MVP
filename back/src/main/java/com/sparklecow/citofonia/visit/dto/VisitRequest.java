@@ -34,10 +34,14 @@ public record VisitRequest(
         String visitorCompany,
 
         @Size(max = 500, message = "Las notas no pueden superar 500 caracteres")
-        @Schema(description = "Motivo de la visita y observaciones (opcional)", example = "Revision de la caldera")
+        @Schema(description = "Observaciones (opcional)", example = "Trae herramientas")
         String notes,
 
         @Schema(description = "Instante de entrada (opcional; por defecto, ahora)",
                 example = "2026-10-21T10:15:00Z")
-        Instant entryAt) {
+        Instant entryAt,
+
+        @Size(max = 200, message = "El motivo no puede superar 200 caracteres")
+        @Schema(description = "Motivo de la visita (opcional)", example = "Revision de la caldera")
+        String reason) {
 }
