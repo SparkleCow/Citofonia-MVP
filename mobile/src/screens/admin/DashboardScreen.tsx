@@ -39,7 +39,6 @@ const quickActions: QuickAction[] = [
   { label: 'Redactar mensaje', description: 'Avisos y mensajes', icon: 'create', path: '/admin/mail', tone: 'navy' },
   { label: 'Mi buzón', description: 'Mensajes recibidos', icon: 'file-tray-full', path: '/admin/inbox', tone: 'navy' },
   { label: 'Llamar', description: 'Citófono', icon: 'call', path: '/admin/calls', tone: 'navy' },
-  { label: 'Emergencias', description: 'Historial y resolución', icon: 'shield-checkmark', path: '/admin/emergencies', tone: 'navy' },
 ];
 
 const ACTIVITY_ICON: Record<ActivityItem['type'], keyof typeof Ionicons.glyphMap> = {
@@ -90,8 +89,8 @@ export default function DashboardScreen() {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={() => load(true)}
-            tintColor="#3389fb"
-            colors={['#3389fb']}
+            tintColor="#4267f2"
+            colors={['#4267f2']}
           />
         }
       >
@@ -116,10 +115,6 @@ export default function DashboardScreen() {
           </Pressable>
         </View>
 
-        <View className="mb-5">
-          <EmergencyButton />
-        </View>
-
         {error ? (
           <View className="mb-5">
             <ErrorBanner message={`No se pudieron cargar las métricas: ${error}`} onRetry={() => load()} />
@@ -129,7 +124,7 @@ export default function DashboardScreen() {
         <SectionHeader title="Resumen" subtitle="Datos del edificio (solo lectura)" />
         {loading ? (
           <View className="items-center justify-center py-10">
-            <ActivityIndicator color="#1854dc" />
+            <ActivityIndicator color="#4267f2" />
             <Text className="mt-3 text-sm text-ink-600 dark:text-ink-300">Cargando métricas…</Text>
           </View>
         ) : (
@@ -158,6 +153,17 @@ export default function DashboardScreen() {
                 onPress={() => go(action.path)}
               />
             ))}
+            <EmergencyButton historyPath="/admin/emergencies">
+              {({ onPress, active }) => (
+                <ActionButton
+                  label={active ? 'Emergencia activa' : 'Emergencia'}
+                  description={active ? 'Ver la alerta' : 'Activar alerta general'}
+                  icon="warning"
+                  tone="rose"
+                  onPress={onPress}
+                />
+              )}
+            </EmergencyButton>
           </View>
         </View>
 
@@ -170,7 +176,7 @@ export default function DashboardScreen() {
                   key={`${item.type}-${item.at}-${index}`}
                   className={`flex-row items-center gap-3 px-4 py-3 ${index > 0 ? 'border-t border-ink-100 dark:border-ink-800' : ''}`}
                 >
-                  <Ionicons name={ACTIVITY_ICON[item.type]} size={18} color={item.type === 'EMERGENCY' ? '#e11d48' : '#526b8e'} />
+                  <Ionicons name={ACTIVITY_ICON[item.type]} size={18} color={item.type === 'EMERGENCY' ? '#e0405a' : '#4a5c98'} />
                   <View className="flex-1">
                     <Text className="text-sm font-bold text-ink-950 dark:text-white" numberOfLines={1}>{item.title}</Text>
                     <Text className="text-xs text-ink-600 dark:text-ink-300" numberOfLines={1}>{item.subtitle}</Text>

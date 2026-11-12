@@ -47,7 +47,7 @@ export function EmergencyOverlay({ emergency, ownAlert, canResolve, onAcknowledg
       >
         <View className="items-center">
           <View className="h-24 w-24 items-center justify-center rounded-full bg-white">
-            <Ionicons name="warning" size={56} color="#be123c" />
+            <Ionicons name="warning" size={56} color="#e0405a" />
           </View>
           <Text className="mt-6 text-center text-4xl font-black tracking-wide text-white">EMERGENCIA</Text>
           <Text className="mt-2 text-center text-lg font-semibold text-rose-100">
@@ -76,7 +76,7 @@ export function EmergencyOverlay({ emergency, ownAlert, canResolve, onAcknowledg
                 value={notes}
                 onChangeText={setNotes}
                 placeholder="Notas de resolución (opcional)"
-                placeholderTextColor="#fecdd3"
+                placeholderTextColor="#fbccd1"
                 maxLength={300}
                 accessibilityLabel="Notas de resolución"
                 className="min-h-[48px] rounded-2xl border border-white/40 bg-black/15 px-4 text-base text-white"
@@ -89,10 +89,10 @@ export function EmergencyOverlay({ emergency, ownAlert, canResolve, onAcknowledg
                 className="min-h-[56px] flex-row items-center justify-center gap-2 rounded-2xl bg-white active:opacity-90"
               >
                 {resolving ? (
-                  <ActivityIndicator color="#be123c" />
+                  <ActivityIndicator color="#e0405a" />
                 ) : (
                   <>
-                    <Ionicons name="checkmark-circle" size={22} color="#047857" />
+                    <Ionicons name="checkmark-circle" size={22} color="#12a372" />
                     <Text className="text-lg font-extrabold text-emerald-800">Marcar como resuelta</Text>
                   </>
                 )}

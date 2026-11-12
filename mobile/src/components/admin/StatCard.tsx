@@ -1,4 +1,4 @@
-import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import { colors, radius, spacing } from '@/theme';
 
 export function StatCard({ label, value }: { label: string; value: number | string }) {

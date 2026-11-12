@@ -33,7 +33,7 @@ export default function AdminLayout() {
   if (loading) {
     return (
       <View className='flex-1 items-center justify-center bg-ink-50 dark:bg-ink-950'>
-        <ActivityIndicator size='large' color='#3389fb' />
+        <ActivityIndicator size='large' color='#4267f2' />
       </View>
     );
   }
@@ -54,7 +54,7 @@ export default function AdminLayout() {
             screenOptions={{
               headerShown: false,
               animation: 'slide_from_right',
-              contentStyle: { backgroundColor: isDark ? '#0b1020' : '#f7f9fc' },
+              contentStyle: { backgroundColor: isDark ? '#090d24' : '#f5f7fd' },
             }}
           >
             <Stack.Screen name='(tabs)' />

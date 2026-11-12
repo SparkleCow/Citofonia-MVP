@@ -4,6 +4,7 @@ import type {
   Paged,
   RecipientResponse,
   VisitPayload,
+  VisitPreauthorizePayload,
   VisitResponse,
   VisitStatusPayload,
 } from '@/types';
@@ -41,5 +42,21 @@ export const visitsApi = {
   updateStatus: (id: number, payload: VisitStatusPayload) =>
     api
       .patch<VisitResponse>(`/api/visits/${id}/status`, payload)
+      .then((response) => response.data),
+  /** USER que reside en la vivienda: anuncia una visita y obtiene su código (QR). */
+  preauthorize: (payload: VisitPreauthorizePayload) =>
+    api.post<VisitResponse>('/api/visits/preauthorize', payload).then((response) => response.data),
+  /** USER: anula una preautorización que aún no se ha usado. */
+  cancelPreauthorization: (id: number) =>
+    api.delete<VisitResponse>(`/api/visits/${id}/preauthorization`).then((response) => response.data),
+  /** ADMIN | CONCIERGE: visita a la que pertenece un código escaneado. */
+  byAccessCode: (code: string) =>
+    api
+      .get<VisitResponse>(`/api/visits/access/${encodeURIComponent(code)}`)
+      .then((response) => response.data),
+  /** ADMIN | CONCIERGE: registra el ingreso de una visita preautorizada (un solo uso). */
+  checkIn: (code: string) =>
+    api
+      .post<VisitResponse>(`/api/visits/access/${encodeURIComponent(code)}/check-in`)
       .then((response) => response.data),
 };

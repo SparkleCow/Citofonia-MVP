@@ -30,7 +30,7 @@ export function AuthImage({ attachmentId, size = 72 }: AuthImageProps) {
   if (!token) {
     return (
       <View style={{ width: size, height: size }} className="items-center justify-center rounded-xl bg-ink-100 dark:bg-ink-800">
-        <ActivityIndicator color="#6f87ab" />
+        <ActivityIndicator color="#6377b5" />
       </View>
     );
   }
@@ -40,7 +40,7 @@ export function AuthImage({ attachmentId, size = 72 }: AuthImageProps) {
   if (failed) {
     return (
       <View style={{ width: size, height: size }} className="items-center justify-center rounded-xl bg-ink-100 dark:bg-ink-800">
-        <Ionicons name="image-outline" size={22} color="#93a8c7" />
+        <Ionicons name="image-outline" size={22} color="#8496cf" />
       </View>
     );
   }

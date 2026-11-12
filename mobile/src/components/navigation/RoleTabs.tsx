@@ -2,6 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Redirect, Stack, Tabs } from 'expo-router';
 import React from 'react';
 import { ActivityIndicator, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '@/context/AuthContext';
 import { CallProvider } from '@/context/CallContext';
 import { EmergencyProvider } from '@/context/EmergencyContext';
@@ -34,7 +35,7 @@ export function RoleShell({ role, children }: { role: Role; children: React.Reac
   if (loading) {
     return (
       <View className="flex-1 items-center justify-center bg-ink-50 dark:bg-ink-950">
-        <ActivityIndicator size="large" color="#1d6af0" />
+        <ActivityIndicator size="large" color="#4267f2" />
       </View>
     );
   }
@@ -61,7 +62,7 @@ export function RoleStack({ screens = [] }: { screens?: string[] }) {
       screenOptions={{
         headerShown: false,
         animation: 'slide_from_right',
-        contentStyle: { backgroundColor: isDark ? '#0b1020' : '#f7f9fc' },
+        contentStyle: { backgroundColor: isDark ? '#090d24' : '#f5f7fd' },
       }}
     >
       <Stack.Screen name="(tabs)" />
@@ -81,22 +82,24 @@ export function RoleTabBar({ tabs }: { tabs: RoleTab[] }) {
   const { isDark } = useTheme();
   const { isTablet } = useResponsive();
   const { stats } = useMailbox();
+  // Altura fija + zona segura: sin esto el indicador de inicio (iOS) recorta las etiquetas.
+  const insets = useSafeAreaInsets();
 
   return (
     <Tabs
       backBehavior="history"
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: isDark ? '#8ec7ff' : '#1854dc',
-        tabBarInactiveTintColor: isDark ? '#93a8c7' : '#526b8e',
+        tabBarActiveTintColor: isDark ? '#92b0ff' : '#4267f2',
+        tabBarInactiveTintColor: isDark ? '#8496cf' : '#4a5c98',
         tabBarLabelStyle: { fontSize: isTablet ? 13 : 12, fontWeight: '700' },
         tabBarLabelPosition: isTablet ? 'beside-icon' : 'below-icon',
         tabBarStyle: {
-          backgroundColor: isDark ? '#0b1020' : '#ffffff',
-          borderTopColor: isDark ? '#2a3a52' : '#dbe3ef',
-          height: isTablet ? 72 : 68,
-          paddingTop: 8,
-          paddingBottom: 10,
+          backgroundColor: isDark ? '#090d24' : '#ffffff',
+          borderTopColor: isDark ? '#24305c' : '#d3dcf2',
+          height: (isTablet ? 72 : 70) + insets.bottom,
+          paddingTop: 6,
+          paddingBottom: 6 + insets.bottom,
         },
       }}
     >
@@ -108,7 +111,7 @@ export function RoleTabBar({ tabs }: { tabs: RoleTab[] }) {
             title: tab.title,
             tabBarAccessibilityLabel: tab.title,
             tabBarBadge: tab.mailBadge && stats.unread > 0 ? stats.unread : undefined,
-            tabBarBadgeStyle: { backgroundColor: '#e11d48', fontWeight: '700' },
+            tabBarBadgeStyle: { backgroundColor: '#e0405a', fontWeight: '700' },
             tabBarIcon: ({ focused, color }) => (
               <Ionicons name={focused ? tab.activeIcon : tab.icon} size={24} color={color as string} />
             ),

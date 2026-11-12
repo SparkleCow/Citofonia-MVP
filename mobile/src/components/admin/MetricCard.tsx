@@ -17,11 +17,11 @@ type MetricCardProps = {
  * fondo tenue, barra de color a la izquierda, sin sombra, sin chevron y no pulsable.
  */
 const toneClasses: Record<Tone, { accent: string; value: string; icon: string }> = {
-  brand: { accent: 'border-brand-500', value: 'text-brand-800 dark:text-brand-200', icon: '#1d6af0' },
-  emerald: { accent: 'border-emerald-500', value: 'text-emerald-800 dark:text-emerald-300', icon: '#059669' },
-  amber: { accent: 'border-amber-500', value: 'text-amber-800 dark:text-amber-300', icon: '#d97706' },
-  violet: { accent: 'border-violet-500', value: 'text-violet-800 dark:text-violet-300', icon: '#7c3aed' },
-  rose: { accent: 'border-rose-600', value: 'text-rose-700 dark:text-rose-300', icon: '#e11d48' },
+  brand: { accent: 'border-brand-500', value: 'text-brand-800 dark:text-brand-200', icon: '#4267f2' },
+  emerald: { accent: 'border-emerald-500', value: 'text-emerald-800 dark:text-emerald-300', icon: '#12a372' },
+  amber: { accent: 'border-amber-500', value: 'text-amber-800 dark:text-amber-300', icon: '#e2880e' },
+  violet: { accent: 'border-violet-500', value: 'text-violet-800 dark:text-violet-300', icon: '#7654f0' },
+  rose: { accent: 'border-rose-600', value: 'text-rose-700 dark:text-rose-300', icon: '#e0405a' },
 };
 
 export function MetricCard({ label, value, icon, tone = 'brand', detail }: MetricCardProps) {

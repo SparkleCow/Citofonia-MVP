@@ -123,7 +123,7 @@ export function RecipientPickerSheet({
         />
       ) : null}
       {loading ? (
-        <ActivityIndicator size="large" color="#1d6af0" />
+        <ActivityIndicator size="large" color="#4267f2" />
       ) : recipients.length === 0 && !error ? (
         <Text className="text-center text-[15px] text-ink-600 dark:text-ink-300">
           Esta vivienda no tiene residentes que puedan recibir avisos.

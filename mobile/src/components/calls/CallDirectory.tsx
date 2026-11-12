@@ -299,7 +299,7 @@ export function CallDirectory({ eyebrow, title, showBack = false }: CallDirector
                     onPress={() => goBack('/admin/more')}
                     className="h-12 w-12 items-center justify-center rounded-full bg-ink-100 active:opacity-70 dark:bg-ink-800"
                   >
-                    <Ionicons name="arrow-back" size={22} color="#526b8e" />
+                    <Ionicons name="arrow-back" size={22} color="#4a5c98" />
                   </Pressable>
                 ) : undefined
               }

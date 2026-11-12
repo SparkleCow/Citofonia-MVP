@@ -1,5 +1,5 @@
 import { View, Text, StyleSheet } from 'react-native';
-import { colors, radius, spacing } from '@/theme';
+import { colors, spacing } from '@/theme';
 
 export function SectionHeader({ title, subtitle }: { title: string; subtitle?: string }) {
   return (

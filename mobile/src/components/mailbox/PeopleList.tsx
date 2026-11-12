@@ -90,7 +90,7 @@ export function PeopleList({ target, selectedId, onSelect, onBack }: PeopleListP
                 onPress={onBack}
                 className="h-12 w-12 items-center justify-center rounded-full bg-ink-100 active:opacity-70 dark:bg-ink-800"
               >
-                <Ionicons name="arrow-back" size={22} color="#526b8e" />
+                <Ionicons name="arrow-back" size={22} color="#4a5c98" />
               </Pressable>
             }
           />
@@ -102,7 +102,7 @@ export function PeopleList({ target, selectedId, onSelect, onBack }: PeopleListP
       }
       ListEmptyComponent={
         loading ? (
-          <ActivityIndicator className="mt-8" size="large" color="#1d6af0" />
+          <ActivityIndicator className="mt-8" size="large" color="#4267f2" />
         ) : (
           <EmptyState
             icon="people-outline"
@@ -143,7 +143,7 @@ export function PeopleList({ target, selectedId, onSelect, onBack }: PeopleListP
                 <Text className="text-xs font-bold text-white">{unread}</Text>
               </View>
             ) : (
-              <Ionicons name="chevron-forward" size={20} color="#6f87ab" />
+              <Ionicons name="chevron-forward" size={20} color="#6377b5" />
             )}
           </Pressable>
         );

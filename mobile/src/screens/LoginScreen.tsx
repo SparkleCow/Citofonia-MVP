@@ -87,7 +87,7 @@ export default function LoginScreen() {
         >
           <View className="mx-auto w-full max-w-[440px]">
             <View className="mb-8 items-center">
-              <View className="h-16 w-16 items-center justify-center rounded-[22px] bg-brand-600 shadow-soft">
+              <View className="h-16 w-16 items-center justify-center rounded-[22px] bg-brand-600">
                 <Ionicons name="call" size={30} color="#ffffff" />
               </View>
               <Text className="mt-4 text-3xl font-extrabold tracking-tight text-ink-900 dark:text-ink-50">
@@ -98,7 +98,7 @@ export default function LoginScreen() {
               </Text>
             </View>
 
-            <View className="rounded-[28px] border border-ink-200/80 bg-white/95 p-6 shadow-soft dark:border-ink-800 dark:bg-ink-900/95">
+            <View className="rounded-[28px] border border-ink-200/80 bg-white/95 p-6 dark:border-ink-800 dark:bg-ink-900/95">
               <View className="mb-5">
                 <View className="mb-2 self-start rounded-full bg-brand-100 px-3 py-1 dark:bg-brand-500/20">
                   <Text className="text-[11px] font-bold uppercase tracking-wider text-brand-700 dark:text-brand-200">
@@ -149,7 +149,7 @@ export default function LoginScreen() {
 
                 {error ? (
                   <View className="flex-row items-start gap-2 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 dark:border-rose-500/30 dark:bg-rose-500/10">
-                    <Ionicons name="alert-circle" size={18} color="#e11d48" />
+                    <Ionicons name="alert-circle" size={18} color="#e0405a" />
                     <Text className="flex-1 text-sm leading-5 text-rose-700 dark:text-rose-300">
                       {error}
                     </Text>
@@ -182,7 +182,7 @@ export default function LoginScreen() {
 
             <View className="mt-5 flex-row items-center justify-center gap-4">
               <View className="flex-row items-center gap-1.5">
-                <Ionicons name="shield-checkmark-outline" size={14} color={isDark ? '#6f87ab' : '#93a8c7'} />
+                <Ionicons name="shield-checkmark-outline" size={14} color={isDark ? '#6377b5' : '#8496cf'} />
                 <Text className="text-[11px] text-ink-500 dark:text-ink-400">Sesión protegida</Text>
               </View>
               <View className="h-1 w-1 rounded-full bg-ink-300 dark:bg-ink-700" />

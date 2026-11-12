@@ -24,6 +24,8 @@ type EmergencyContextValue = {
   /** Abre el aviso a pantalla completa de la alerta más reciente. */
   showAlert: () => void;
   canResolve: boolean;
+  /** Solo portería/conserjería y administración pueden emitir la alerta masiva. */
+  canTrigger: boolean;
 };
 
 const EmergencyContext = createContext<EmergencyContextValue | undefined>(undefined);
@@ -101,12 +103,15 @@ export function EmergencyProvider({ children }: { children: React.ReactNode }) {
     if (active.length === 0) Vibration.cancel();
   }, [active.length]);
 
+  const canTrigger = hasRole('ADMIN', 'CONCIERGE');
+
   const trigger = useCallback(async (code: string, message?: string) => {
+    if (!canTrigger) throw new Error('Tu rol no puede activar la alerta general.');
     const created = await emergenciesApi.trigger(code, message);
     seen.current.add(created.id);
     setActive((current) => [created, ...current.filter((e) => e.id !== created.id)]);
     return created;
-  }, []);
+  }, [canTrigger]);
 
   const resolve = useCallback(async (id: number, notes?: string) => {
     const resolved = await emergenciesApi.resolve(id, notes);
@@ -124,12 +129,12 @@ export function EmergencyProvider({ children }: { children: React.ReactNode }) {
     if (active[0]) setVisibleId(active[0].id);
   }, [active]);
 
-  const canResolve = hasRole('ADMIN', 'CONCIERGE');
+  const canResolve = canTrigger;
   const visible = active.find((e) => e.id === visibleId) ?? null;
 
   const value = useMemo<EmergencyContextValue>(
-    () => ({ active, trigger, resolve, showAlert, canResolve }),
-    [active, trigger, resolve, showAlert, canResolve],
+    () => ({ active, trigger, resolve, showAlert, canResolve, canTrigger }),
+    [active, trigger, resolve, showAlert, canResolve, canTrigger],
   );
 
   return (

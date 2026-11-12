@@ -13,7 +13,7 @@ export function ErrorBanner({ message, onRetry }: ErrorBannerProps) {
       accessibilityRole="alert"
       className="flex-row items-center gap-3 rounded-2xl border border-rose-300 bg-rose-50 px-4 py-3 dark:border-rose-500/40 dark:bg-rose-500/10"
     >
-      <Ionicons name="alert-circle" size={20} color="#e11d48" />
+      <Ionicons name="alert-circle" size={20} color="#e0405a" />
       <Text className="flex-1 text-sm font-medium text-rose-800 dark:text-rose-200">{message}</Text>
       {onRetry ? (
         <Pressable

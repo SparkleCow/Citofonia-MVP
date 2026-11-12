@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
+import { router } from 'expo-router';
 import React, { useState } from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { Pressable, Text } from 'react-native';
 import { getApiErrorMessage } from '@/api/axios';
 import { Button } from '@/components/ui/Button';
 import { ErrorBanner } from '@/components/ui/ErrorBanner';
@@ -9,29 +10,36 @@ import { Sheet } from '@/components/ui/Sheet';
 import { useEmergency } from '@/context/EmergencyContext';
 import { digitsOnly } from '@/lib/validation';
 
-type Step = 'confirm' | 'code';
+type TriggerProps = {
+  onPress: () => void;
+  /** Hay una alerta en curso: el botón la muestra en lugar de crear otra. */
+  active: boolean;
+};
 
 type EmergencyButtonProps = {
-  /** compact: botón en cabecera; full: tarjeta ancha. */
-  variant?: 'compact' | 'full';
+  /** Ruta del historial de alertas; se ofrece como enlace dentro de la hoja. */
+  historyPath?: string;
+  /** Botón propio (tile, acción…). Sin él se pinta la píldora "SOS". */
+  children?: (props: TriggerProps) => React.ReactNode;
 };
 
 /**
- * Botón de emergencia: rojo y separado del resto de acciones. Pide confirmación y
- * después el código de seguridad, que solo valida el servidor (nunca está en la app).
+ * Alerta general (solo ADMIN/CONCIERGE). Un toque abre directamente el código de
+ * seguridad, que solo valida el servidor (nunca está en la app).
  */
-export function EmergencyButton({ variant = 'full' }: EmergencyButtonProps) {
-  const { trigger, active, showAlert } = useEmergency();
+export function EmergencyButton({ historyPath, children }: EmergencyButtonProps) {
+  const { trigger, active, showAlert, canTrigger } = useEmergency();
   const [open, setOpen] = useState(false);
-  const [step, setStep] = useState<Step>('confirm');
   const [code, setCode] = useState('');
   const [message, setMessage] = useState('');
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Exclusivo de portería/conserjería y administración.
+  if (!canTrigger) return null;
+
   const close = () => {
     setOpen(false);
-    setStep('confirm');
     setCode('');
     setMessage('');
     setError(null);
@@ -57,108 +65,73 @@ export function EmergencyButton({ variant = 'full' }: EmergencyButtonProps) {
   };
 
   const hasActive = active.length > 0;
+  const onPress = hasActive ? showAlert : () => setOpen(true);
 
   return (
     <>
-      {hasActive ? (
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Ver emergencia activa"
-          onPress={showAlert}
-          className="min-h-[56px] flex-row items-center gap-3 rounded-2xl bg-rose-700 px-4 active:bg-rose-800"
-        >
-          <Ionicons name="warning" size={24} color="#ffffff" />
-          <View className="flex-1">
-            <Text className="text-base font-extrabold text-white">Emergencia activa</Text>
-            <Text className="text-xs text-rose-100" numberOfLines={1}>
-              {active[0].message || `Activada por ${active[0].triggeredByName}`}
-            </Text>
-          </View>
-          <Ionicons name="chevron-forward" size={22} color="#ffffff" />
-        </Pressable>
-      ) : variant === 'compact' ? (
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Botón de emergencia"
-          onPress={() => setOpen(true)}
-          className="h-12 flex-row items-center gap-2 rounded-full border-2 border-rose-600 bg-white px-4 active:bg-rose-50 dark:bg-ink-900"
-        >
-          <Ionicons name="warning" size={20} color="#e11d48" />
-          <Text className="text-sm font-extrabold text-rose-700 dark:text-rose-300">SOS</Text>
-        </Pressable>
+      {children ? (
+        children({ onPress, active: hasActive })
       ) : (
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="Botón de emergencia: activar alerta general"
-          onPress={() => setOpen(true)}
-          className="min-h-[64px] flex-row items-center gap-3 rounded-2xl border-2 border-rose-600 bg-rose-50 px-4 active:bg-rose-100 dark:bg-rose-500/10"
+          accessibilityLabel={hasActive ? 'Ver emergencia activa' : 'Activar alerta de emergencia'}
+          onPress={onPress}
+          className={`h-12 flex-row items-center gap-2 self-start rounded-full border px-4 shadow-md shadow-ink-950/50 active:scale-95 ${
+            hasActive ? 'border-rose-300 bg-rose-700 active:bg-rose-800' : 'border-rose-400 bg-rose-600 active:bg-rose-700'
+          }`}
         >
-          <View className="h-11 w-11 items-center justify-center rounded-full bg-rose-600">
-            <Ionicons name="warning" size={24} color="#ffffff" />
-          </View>
-          <View className="flex-1">
-            <Text className="text-base font-extrabold text-rose-800 dark:text-rose-200">Emergencia</Text>
-            <Text className="text-xs text-rose-700 dark:text-rose-300">Alerta general a todo el edificio</Text>
-          </View>
+          <Ionicons name="warning" size={20} color="#ffffff" />
+          <Text className="text-sm font-extrabold text-white">{hasActive ? 'Emergencia activa' : 'Activar alerta'}</Text>
         </Pressable>
       )}
 
       <Sheet
         visible={open}
         onClose={close}
-        title={step === 'confirm' ? '¿Activar la alerta general?' : 'Código de seguridad'}
-        subtitle={
-          step === 'confirm'
-            ? 'Se avisará de inmediato a todos los residentes, a conserjería y a administración.'
-            : 'Introduce el código para confirmar. Queda registrado quién la activa.'
-        }
+        title="Alerta de emergencia"
+        subtitle="Introduce el código para avisar a todo el edificio. Queda registrado quién la activa."
         footer={
-          step === 'confirm' ? (
-            <>
-              <Button title="Cancelar" variant="secondary" size="lg" onPress={close} className="flex-1" />
-              <Button title="Continuar" variant="danger" size="lg" icon="warning" onPress={() => setStep('code')} className="flex-1" />
-            </>
-          ) : (
-            <>
-              <Button title="Atrás" variant="secondary" size="lg" onPress={() => setStep('confirm')} className="flex-1" />
-              <Button title="Activar alerta" variant="danger" size="lg" icon="warning" loading={sending} onPress={submit} className="flex-1" />
-            </>
-          )
+          <>
+            <Button title="Cancelar" variant="secondary" size="lg" onPress={close} className="flex-1" />
+            <Button title="Activar alerta" variant="danger" size="lg" icon="warning" loading={sending} onPress={submit} className="flex-1" />
+          </>
         }
       >
-        {step === 'confirm' ? (
-          <View className="flex-row items-start gap-3 rounded-2xl border border-amber-300 bg-amber-50 p-4 dark:border-amber-500/40 dark:bg-amber-500/10">
-            <Ionicons name="information-circle" size={22} color="#b45309" />
-            <Text className="flex-1 text-sm leading-5 text-amber-900 dark:text-amber-200">
-              Úsala solo ante una emergencia real (incendio, intrusión, evacuación…). Los avisos falsos afectan a todo el edificio.
-            </Text>
-          </View>
-        ) : (
-          <>
-            {error ? <ErrorBanner message={error} /> : null}
-            <Input
-              label="Código de seguridad"
-              icon="key-outline"
-              value={code}
-              onChangeText={(value) => {
-                setCode(digitsOnly(value, 8));
-                setError(null);
-              }}
-              digitsOnly
-              secureTextEntry
-              maxLength={8}
-              autoFocus
-              placeholder="••••"
-            />
-            <Input
-              label="¿Qué ocurre? (opcional)"
-              value={message}
-              onChangeText={setMessage}
-              maxLength={200}
-              placeholder="Incendio en el sótano"
-            />
-          </>
-        )}
+        {error ? <ErrorBanner message={error} /> : null}
+        <Input
+          label="Código de seguridad"
+          icon="key-outline"
+          value={code}
+          onChangeText={(value) => {
+            setCode(digitsOnly(value, 8));
+            setError(null);
+          }}
+          digitsOnly
+          secureTextEntry
+          maxLength={8}
+          autoFocus
+          placeholder="••••"
+          onSubmitEditing={submit}
+        />
+        <Input
+          label="¿Qué ocurre? (opcional)"
+          value={message}
+          onChangeText={setMessage}
+          maxLength={200}
+          placeholder="Incendio en el sótano"
+        />
+        {historyPath ? (
+          <Button
+            title="Ver historial de alertas"
+            variant="ghost"
+            size="sm"
+            icon="time-outline"
+            onPress={() => {
+              close();
+              router.push(historyPath as never);
+            }}
+          />
+        ) : null}
       </Sheet>
     </>
   );

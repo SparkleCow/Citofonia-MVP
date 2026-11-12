@@ -5,7 +5,6 @@
     "module": "ESNext",
     "moduleResolution": "bundler",
     "jsx": "react-native",
-    "baseUrl": ".",
     "paths": {
       "@/*": [
         "./src/*"

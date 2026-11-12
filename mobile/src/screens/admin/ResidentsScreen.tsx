@@ -44,9 +44,9 @@ function IconAction({
   disabled?: boolean;
 }) {
   const colors = {
-    neutral: { wrap: 'border-ink-300 dark:border-ink-600', icon: '#3d5270' },
-    danger: { wrap: 'border-rose-300 dark:border-rose-500/50', icon: '#e11d48' },
-    success: { wrap: 'border-emerald-300 dark:border-emerald-500/50', icon: '#047857' },
+    neutral: { wrap: 'border-ink-300 dark:border-ink-600', icon: '#36457a' },
+    danger: { wrap: 'border-rose-300 dark:border-rose-500/50', icon: '#e0405a' },
+    success: { wrap: 'border-emerald-300 dark:border-emerald-500/50', icon: '#12a372' },
   }[tone];
   return (
     <Pressable
@@ -199,7 +199,7 @@ export default function ResidentsScreen() {
                 onPress={() => router.push('/admin/pending')}
                 className="min-h-[52px] flex-row items-center gap-3 rounded-2xl border border-amber-300 bg-amber-50 px-4 active:opacity-80 dark:border-amber-500/40 dark:bg-amber-500/10"
               >
-                <Ionicons name="time" size={20} color="#b45309" />
+                <Ionicons name="time" size={20} color="#e2880e" />
                 <Text className="flex-1 text-sm font-bold text-amber-900 dark:text-amber-200">
                   {pendingCount} registro(s) esperando aprobación
                 </Text>
@@ -264,7 +264,7 @@ export default function ResidentsScreen() {
                     {u.email}
                   </Text>
                 </View>
-                <Ionicons name="create-outline" size={20} color="#6f87ab" />
+                <Ionicons name="create-outline" size={20} color="#6377b5" />
               </Pressable>
               <View className="mt-2 flex-row flex-wrap gap-1.5">
                 <Badge label={badge.label} tone={badge.tone} />

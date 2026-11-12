@@ -28,11 +28,11 @@ function MessageDetail({ item }: { item: MailboxItem }) {
       <Text className="text-2xl font-extrabold text-ink-950 dark:text-white">{item.subject}</Text>
       <View className="mt-3 flex-row flex-wrap items-center gap-x-4 gap-y-1">
         <View className="flex-row items-center gap-1.5">
-          <Ionicons name="person-circle-outline" size={16} color="#526b8e" />
+          <Ionicons name="person-circle-outline" size={16} color="#4a5c98" />
           <Text className="text-sm text-ink-700 dark:text-ink-200">{item.senderEmail}</Text>
         </View>
         <View className="flex-row items-center gap-1.5">
-          <Ionicons name="time-outline" size={16} color="#526b8e" />
+          <Ionicons name="time-outline" size={16} color="#4a5c98" />
           <Text className="text-sm text-ink-700 dark:text-ink-200">{formatDateTime(item.createdAt)}</Text>
         </View>
       </View>
@@ -130,7 +130,7 @@ export function MailboxView({ eyebrow = 'Buzón', headerRight }: MailboxViewProp
       ListHeaderComponent={header}
       ListEmptyComponent={
         loading && messages.length === 0 ? (
-          <ActivityIndicator className="mt-12" size="large" color="#1d6af0" />
+          <ActivityIndicator className="mt-12" size="large" color="#4267f2" />
         ) : (
           <EmptyState
             icon="mail-open-outline"
@@ -150,7 +150,7 @@ export function MailboxView({ eyebrow = 'Buzón', headerRight }: MailboxViewProp
         />
       )}
       refreshControl={
-        <RefreshControl refreshing={loading && messages.length > 0} onRefresh={refresh} tintColor="#1d6af0" />
+        <RefreshControl refreshing={loading && messages.length > 0} onRefresh={refresh} tintColor="#4267f2" />
       }
       showsVerticalScrollIndicator={false}
     />
@@ -166,7 +166,7 @@ export function MailboxView({ eyebrow = 'Buzón', headerRight }: MailboxViewProp
           <MessageDetail item={active} />
         ) : (
           <View className="flex-1 items-center justify-center p-10">
-            <Ionicons name="mail-open-outline" size={48} color="#93a8c7" />
+            <Ionicons name="mail-open-outline" size={48} color="#8496cf" />
             <Text className="mt-3 text-base font-semibold text-ink-600 dark:text-ink-300">
               Selecciona un mensaje para leerlo
             </Text>

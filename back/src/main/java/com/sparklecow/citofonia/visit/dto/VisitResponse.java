@@ -60,7 +60,13 @@ public record VisitResponse(
         String registeredByEmail,
 
         @Schema(description = "Instante de creacion del registro", example = "2026-10-21T10:15:00Z")
-        Instant createdAt) {
+        Instant createdAt,
+        @Schema(description = "Codigo de acceso (QR) de una visita preautorizada (null en el resto)",
+                example = "7K2M9QXD4HTB")
+        String accessCode,
+        @Schema(description = "Llegada estimada de una visita preautorizada (null en el resto)",
+                example = "2026-10-21T10:15:00Z")
+        Instant expectedAt) {
 
     public static VisitResponse from(Visit visit) {
         return new VisitResponse(
@@ -79,7 +85,9 @@ public record VisitResponse(
                 visit.getNotifiedAt(),
                 splitEmails(visit.getNotifiedTo()),
                 visit.getRegisteredByEmail(),
-                visit.getCreatedAt());
+                visit.getCreatedAt(),
+                visit.getAccessCode(),
+                visit.getExpectedAt());
     }
 
     private static List<String> splitEmails(String value) {

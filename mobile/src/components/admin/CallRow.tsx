@@ -20,10 +20,10 @@ const callTones: Record<CallType, string> = {
 };
 
 const callIconColors: Record<CallType, string> = {
-  DIRECT: '#1d6af0',
-  APARTMENT: '#059669',
-  PORTAL: '#7c3aed',
-  PANIC: '#e11d48',
+  DIRECT: '#4267f2',
+  APARTMENT: '#12a372',
+  PORTAL: '#7654f0',
+  PANIC: '#e0405a',
 };
 
 export function CallRow({ call, detailed = false }: { call: CallAuditResponse; detailed?: boolean }) {

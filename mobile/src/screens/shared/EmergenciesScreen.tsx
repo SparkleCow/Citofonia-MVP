@@ -59,7 +59,7 @@ export function EmergenciesScreen({ fallback }: EmergenciesScreenProps) {
                   onPress={() => goBack(fallback)}
                   className="h-12 w-12 items-center justify-center rounded-full bg-ink-100 active:opacity-70 dark:bg-ink-800"
                 >
-                  <Ionicons name="arrow-back" size={22} color="#526b8e" />
+                  <Ionicons name="arrow-back" size={22} color="#4a5c98" />
                 </Pressable>
               }
             />
@@ -79,7 +79,7 @@ export function EmergenciesScreen({ fallback }: EmergenciesScreenProps) {
               }`}
             >
               <View className="flex-row items-center gap-2">
-                <Ionicons name="warning" size={18} color={isActive ? '#e11d48' : '#6f87ab'} />
+                <Ionicons name="warning" size={18} color={isActive ? '#e0405a' : '#6377b5'} />
                 <Text className="flex-1 text-base font-bold text-ink-950 dark:text-white" numberOfLines={2}>
                   {item.message || 'Alerta general'}
                 </Text>

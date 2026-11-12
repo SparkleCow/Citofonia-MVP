@@ -112,7 +112,7 @@ export function ThreadView({ person, canSend, onBack }: ThreadViewProps) {
             onPress={onBack}
             className="h-12 w-12 items-center justify-center rounded-full bg-ink-100 active:opacity-70 dark:bg-ink-800"
           >
-            <Ionicons name="arrow-back" size={22} color="#526b8e" />
+            <Ionicons name="arrow-back" size={22} color="#4a5c98" />
           </Pressable>
         ) : null}
         <Avatar firstName={person.firstName} lastName={person.lastName} size="md" />
@@ -137,7 +137,7 @@ export function ThreadView({ person, canSend, onBack }: ThreadViewProps) {
       >
         {bubbles.length === 0 ? (
           <View className="flex-1 items-center justify-center py-16">
-            <Ionicons name="chatbubbles-outline" size={44} color="#93a8c7" />
+            <Ionicons name="chatbubbles-outline" size={44} color="#8496cf" />
             <Text className="mt-3 max-w-[280px] text-center text-[15px] text-ink-600 dark:text-ink-300">
               {canSend
                 ? 'Aún no hay mensajes. Escribe el primero abajo.'
@@ -188,7 +188,7 @@ export function ThreadView({ person, canSend, onBack }: ThreadViewProps) {
                 setError(null);
               }}
               placeholder="Escribe un mensaje…"
-              placeholderTextColor={isDark ? '#6f87ab' : '#6f87ab'}
+              placeholderTextColor={isDark ? '#6377b5' : '#6377b5'}
               multiline
               maxLength={MAX_BODY}
               accessibilityLabel="Mensaje"
@@ -210,7 +210,7 @@ export function ThreadView({ person, canSend, onBack }: ThreadViewProps) {
         </View>
       ) : (
         <View className="flex-row items-center gap-2 border-t border-ink-200 bg-white px-4 py-4 dark:border-ink-800 dark:bg-ink-900">
-          <Ionicons name="lock-closed-outline" size={18} color="#526b8e" />
+          <Ionicons name="lock-closed-outline" size={18} color="#4a5c98" />
           <Text className="flex-1 text-sm text-ink-700 dark:text-ink-200">
             Tu rol solo permite recibir mensajes.
           </Text>

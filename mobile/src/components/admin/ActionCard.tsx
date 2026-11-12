@@ -25,7 +25,7 @@ export function ActionCard({ title, subtitle, onPress, icon, disabled, variant =
         {icon ? <View style={styles.iconWrap}>{icon}</View> : null}
         <View style={{ flex: 1 }}>
           <Text style={[styles.title, { color: variant === 'primary' ? '#fff' : colors.text }]}>{title}</Text>
-          {subtitle ? <Text style={[styles.subtitle, { color: variant === 'primary' ? '#eef6ff' : colors.subtext }]}>{subtitle}</Text> : null}
+          {subtitle ? <Text style={[styles.subtitle, { color: variant === 'primary' ? '#eef3ff' : colors.subtext }]}>{subtitle}</Text> : null}
         </View>
       </View>
     </TouchableOpacity>
@@ -45,7 +45,7 @@ const styles = StyleSheet.create({
     width: 52,
     height: 52,
     borderRadius: radius.md,
-    backgroundColor: 'rgba(79,157,235,0.18)',
+    backgroundColor: 'rgba(66,103,242,0.18)',
     alignItems: 'center',
     justifyContent: 'center',
   },

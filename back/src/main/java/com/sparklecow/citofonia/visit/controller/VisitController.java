@@ -3,6 +3,7 @@ package com.sparklecow.citofonia.visit.controller;
 import com.sparklecow.citofonia.common.exception.ErrorResponse;
 import com.sparklecow.citofonia.user.entity.User;
 import com.sparklecow.citofonia.visit.dto.VisitNotifyRequest;
+import com.sparklecow.citofonia.visit.dto.VisitPreauthorizeRequest;
 import com.sparklecow.citofonia.visit.dto.VisitRecipientResponse;
 import com.sparklecow.citofonia.visit.dto.VisitRequest;
 import com.sparklecow.citofonia.visit.dto.VisitResponse;
@@ -26,6 +27,7 @@ import org.springframework.data.web.PagedModel;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -186,5 +188,78 @@ public class VisitController {
             @Valid @RequestBody VisitStatusRequest request,
             @AuthenticationPrincipal User actor) {
         return visitService.updateStatus(id, request, actor);
+    }
+
+    @Operation(
+            summary = "Preautorizar una visita",
+            description = "Un residente anuncia una visita para su vivienda. La respuesta incluye el "
+                    + "codigo de acceso que el visitante presenta (como QR) en porteria.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "201", description = "Visita preautorizada"),
+            @ApiResponse(responseCode = "400", description = "Fecha fuera de rango",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "403", description = "El usuario no reside en una vivienda",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "422", description = "Errores de validacion",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class)))})
+    @PreAuthorize("hasRole('USER')")
+    @PostMapping("/preauthorize")
+    @ResponseStatus(HttpStatus.CREATED)
+    public VisitResponse preauthorize(
+            @Valid @RequestBody VisitPreauthorizeRequest request,
+            @AuthenticationPrincipal User resident) {
+        return visitService.preauthorize(request, resident);
+    }
+
+    @Operation(
+            summary = "Anular una visita preautorizada",
+            description = "El residente anula una autorizacion que aun no se ha usado; el codigo deja de ser valido.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Autorizacion anulada"),
+            @ApiResponse(responseCode = "403", description = "La visita pertenece a otra vivienda",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "409", description = "La visita ya ingreso o ya estaba anulada",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class)))})
+    @PreAuthorize("hasRole('USER')")
+    @DeleteMapping("/{id}/preauthorization")
+    public VisitResponse cancelPreauthorization(
+            @Parameter(description = "Id de la visita") @PathVariable Long id,
+            @AuthenticationPrincipal User resident) {
+        return visitService.cancelPreauthorization(id, resident);
+    }
+
+    @Operation(
+            summary = "Consultar una visita por su codigo de acceso",
+            description = "Datos de la visita preautorizada a la que pertenece el codigo (QR). "
+                    + "Requiere rol ADMIN o CONCIERGE.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Visita encontrada"),
+            @ApiResponse(responseCode = "404", description = "Codigo no valido",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class)))})
+    @PreAuthorize("hasAnyRole('ADMIN','CONCIERGE')")
+    @GetMapping("/access/{code}")
+    public VisitResponse byAccessCode(
+            @Parameter(description = "Codigo de acceso") @PathVariable String code,
+            @AuthenticationPrincipal User actor) {
+        return visitService.findByAccessCode(code, actor);
+    }
+
+    @Operation(
+            summary = "Registrar el ingreso de una visita preautorizada",
+            description = "Marca la visita como ingresada y avisa por buzon a la vivienda. El codigo es "
+                    + "de un solo uso y caduca 12 horas despues de la llegada estimada. "
+                    + "Requiere rol ADMIN o CONCIERGE.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Ingreso registrado"),
+            @ApiResponse(responseCode = "404", description = "Codigo no valido",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "409", description = "Codigo ya usado, anulado o caducado",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class)))})
+    @PreAuthorize("hasAnyRole('ADMIN','CONCIERGE')")
+    @PostMapping("/access/{code}/check-in")
+    public VisitResponse checkIn(
+            @Parameter(description = "Codigo de acceso") @PathVariable String code,
+            @AuthenticationPrincipal User actor) {
+        return visitService.checkIn(code, actor);
     }
 }

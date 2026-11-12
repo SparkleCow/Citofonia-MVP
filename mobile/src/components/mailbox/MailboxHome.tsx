@@ -132,7 +132,7 @@ export function MailboxHome({ eyebrow, caps, headerRight, onCompose, selected, o
               : 'border-ink-200 bg-white dark:border-ink-800 dark:bg-ink-900'
           }`}
         >
-          <Ionicons name="file-tray-full-outline" size={22} color="#1854dc" />
+          <Ionicons name="file-tray-full-outline" size={22} color="#4267f2" />
           <Text className="flex-1 text-base font-bold text-ink-900 dark:text-ink-50">Todos mis mensajes</Text>
           {stats.unread > 0 ? (
             <View className="min-w-[26px] items-center rounded-full bg-rose-600 px-2 py-0.5">
@@ -161,7 +161,7 @@ export function MailboxHome({ eyebrow, caps, headerRight, onCompose, selected, o
       keyboardShouldPersistTaps="handled"
       ListEmptyComponent={
         loading ? (
-          <ActivityIndicator className="mt-8" size="large" color="#1d6af0" />
+          <ActivityIndicator className="mt-8" size="large" color="#4267f2" />
         ) : (
           <EmptyState
             icon="business-outline"
@@ -185,7 +185,7 @@ export function MailboxHome({ eyebrow, caps, headerRight, onCompose, selected, o
                 : 'border-ink-200 bg-white dark:border-ink-800 dark:bg-ink-900'
             }`}
           >
-            <Ionicons name="home" size={18} color={active ? '#1854dc' : '#526b8e'} />
+            <Ionicons name="home" size={18} color={active ? '#4267f2' : '#4a5c98'} />
             <Text className="mt-1 text-lg font-extrabold text-ink-950 dark:text-white" numberOfLines={1}>
               {item.identifier}
             </Text>

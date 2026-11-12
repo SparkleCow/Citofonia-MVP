@@ -17,7 +17,7 @@ function RootNavigator() {
         screenOptions={{
           headerShown: false,
           animation: 'fade',
-          contentStyle: { backgroundColor: isDark ? '#0b1020' : '#f7f9fc' },
+          contentStyle: { backgroundColor: isDark ? '#090d24' : '#f5f7fd' },
         }}
       />
     </>

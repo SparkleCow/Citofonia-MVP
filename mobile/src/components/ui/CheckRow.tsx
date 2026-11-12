@@ -35,7 +35,7 @@ export function CheckRow({ label, description, checked, onToggle, disabled, icon
       >
         {checked ? <Ionicons name="checkmark" size={18} color="#ffffff" /> : null}
       </View>
-      {icon ? <Ionicons name={icon} size={20} color={checked ? '#1854dc' : '#526b8e'} /> : null}
+      {icon ? <Ionicons name={icon} size={20} color={checked ? '#4267f2' : '#4a5c98'} /> : null}
       <View className="flex-1">
         <Text className="text-[15px] font-bold text-ink-950 dark:text-white" numberOfLines={1}>
           {label}

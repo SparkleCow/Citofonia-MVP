@@ -12,7 +12,7 @@ import { Button } from '@/components/ui/Button';
 export function RouteError({ error, retry }: ErrorBoundaryProps) {
   return (
     <View className="flex-1 items-center justify-center gap-4 bg-ink-50 p-8 dark:bg-ink-950">
-      <Ionicons name="alert-circle" size={48} color="#e11d48" />
+      <Ionicons name="alert-circle" size={48} color="#e0405a" />
       <Text className="text-center text-xl font-extrabold text-ink-950 dark:text-white">
         No se pudo mostrar esta pantalla
       </Text>

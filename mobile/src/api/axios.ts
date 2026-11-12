@@ -41,6 +41,7 @@ function toApiError(error: AxiosError<ErrorBody>): ApiError {
   const body = error.response?.data;
   const message =
     body?.message ||
+    (!API_BASE_URL ? 'La app no tiene configurada la dirección del servidor (EXPO_PUBLIC_API_URL).' : '') ||
     (status === 401
       ? 'Tu sesión ha caducado. Inicia sesión de nuevo.'
       : status === 403

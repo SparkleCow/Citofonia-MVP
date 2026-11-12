@@ -44,7 +44,7 @@ export function OptionPills<K extends string>({
               }`}
             >
               {option.icon ? (
-                <Ionicons name={option.icon} size={18} color={selected ? '#1854dc' : '#526b8e'} />
+                <Ionicons name={option.icon} size={18} color={selected ? '#4267f2' : '#4a5c98'} />
               ) : null}
               <Text
                 className={`text-[15px] font-bold ${

@@ -51,12 +51,12 @@ export function Input({
           <Ionicons
             name={icon}
             size={19}
-            color={error ? '#f43f5e' : focused ? '#3389fb' : isDark ? '#6f87ab' : '#93a8c7'}
+            color={error ? '#e0405a' : focused ? '#4267f2' : isDark ? '#6377b5' : '#8496cf'}
           />
         ) : null}
         <TextInput
           className="min-h-[50px] flex-1 py-3 text-[15px] text-ink-900 dark:text-ink-50"
-          placeholderTextColor={isDark ? '#526b8e' : '#93a8c7'}
+          placeholderTextColor={isDark ? '#4a5c98' : '#8496cf'}
           secureTextEntry={secure}
           {...(digitsOnly ? { keyboardType: 'number-pad', inputMode: 'numeric' as const } : null)}
           onChangeText={(text) => onChangeText?.(digitsOnly ? text.replace(/\D+/g, '') : text)}
@@ -80,7 +80,7 @@ export function Input({
             <Ionicons
               name={visible ? 'eye-off-outline' : 'eye-outline'}
               size={20}
-              color={isDark ? '#6f87ab' : '#6f87ab'}
+              color={isDark ? '#6377b5' : '#6377b5'}
             />
           </Pressable>
         ) : null}

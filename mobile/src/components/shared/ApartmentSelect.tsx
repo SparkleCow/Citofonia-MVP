@@ -67,7 +67,7 @@ export function ApartmentSelect({ value, onChange, label = 'Apartamento', error 
           error ? 'border-rose-500' : 'border-ink-300 dark:border-ink-700'
         }`}
       >
-        <Ionicons name="business-outline" size={20} color="#526b8e" />
+        <Ionicons name="business-outline" size={20} color="#4a5c98" />
         <Text
           className={`flex-1 text-[15px] ${
             value ? 'font-semibold text-ink-950 dark:text-white' : 'text-ink-500 dark:text-ink-400'
@@ -75,7 +75,7 @@ export function ApartmentSelect({ value, onChange, label = 'Apartamento', error 
         >
           {value ? apartmentLabel(value) : 'Selecciona una vivienda'}
         </Text>
-        <Ionicons name="chevron-down" size={20} color="#526b8e" />
+        <Ionicons name="chevron-down" size={20} color="#4a5c98" />
       </Pressable>
       {error ? <Text className="text-xs font-medium text-rose-600 dark:text-rose-400">{error}</Text> : null}
 
@@ -92,7 +92,7 @@ export function ApartmentSelect({ value, onChange, label = 'Apartamento', error 
                 onPress={() => setOpen(false)}
                 className="h-12 w-12 items-center justify-center rounded-full bg-ink-100 active:opacity-70 dark:bg-ink-800"
               >
-                <Ionicons name="close" size={22} color="#526b8e" />
+                <Ionicons name="close" size={22} color="#4a5c98" />
               </Pressable>
             </View>
             <SearchBar value={query} onChangeText={setQuery} placeholder="Buscar por torre, número..." />
@@ -102,7 +102,7 @@ export function ApartmentSelect({ value, onChange, label = 'Apartamento', error 
               </View>
             ) : null}
             {open && options.length === 0 && !loadError ? (
-              <ActivityIndicator className="mt-10" size="large" color="#1d6af0" />
+              <ActivityIndicator className="mt-10" size="large" color="#4267f2" />
             ) : (
               <ScrollView
                 className="mt-3"
@@ -130,7 +130,7 @@ export function ApartmentSelect({ value, onChange, label = 'Apartamento', error 
                       <Text className="flex-1 text-base font-semibold text-ink-950 dark:text-white">
                         {apartmentLabel(option)}
                       </Text>
-                      {selected ? <Ionicons name="checkmark-circle" size={22} color="#1d6af0" /> : null}
+                      {selected ? <Ionicons name="checkmark-circle" size={22} color="#4267f2" /> : null}
                     </Pressable>
                   );
                 })}

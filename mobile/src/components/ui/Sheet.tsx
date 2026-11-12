@@ -64,7 +64,7 @@ export function Sheet({ visible, onClose, title, subtitle, children, footer }: S
               onPress={onClose}
               className="h-11 w-11 items-center justify-center rounded-full bg-ink-100 active:opacity-70 dark:bg-ink-800"
             >
-              <Ionicons name="close" size={22} color="#526b8e" />
+              <Ionicons name="close" size={22} color="#4a5c98" />
             </Pressable>
           </View>
 

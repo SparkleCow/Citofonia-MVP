@@ -32,12 +32,12 @@ export default function AdminTabsLayout() {
       backBehavior="history"
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: isDark ? '#8ec7ff' : '#1854dc',
-        tabBarInactiveTintColor: isDark ? '#93a8c7' : '#526b8e',
+        tabBarActiveTintColor: isDark ? '#92b0ff' : '#4267f2',
+        tabBarInactiveTintColor: isDark ? '#8496cf' : '#4a5c98',
         tabBarLabelStyle: { fontSize: 12, fontWeight: '700', marginTop: 2 },
         tabBarStyle: {
-          backgroundColor: isDark ? '#0b1020' : '#ffffff',
-          borderTopColor: isDark ? '#2a3a52' : '#dbe3ef',
+          backgroundColor: isDark ? '#090d24' : '#ffffff',
+          borderTopColor: isDark ? '#24305c' : '#d3dcf2',
           height: 68,
           paddingTop: 6,
           paddingBottom: 8,
@@ -76,7 +76,7 @@ export default function AdminTabsLayout() {
         options={{
           title: 'Más',
           tabBarBadge: stats.unread > 0 ? stats.unread : undefined,
-          tabBarBadgeStyle: { backgroundColor: '#e11d48', fontWeight: '700' },
+          tabBarBadgeStyle: { backgroundColor: '#e0405a', fontWeight: '700' },
           tabBarIcon: ({ focused, color }) => (
             <TabIcon focused={focused} color={color} active="menu" inactive="menu-outline" />
           ),

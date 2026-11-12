@@ -114,7 +114,7 @@ export default function CreateStaffScreen() {
               onPress={() => router.back()}
               className="h-10 w-10 items-center justify-center rounded-full bg-ink-100 active:opacity-80 dark:bg-ink-800"
             >
-              <Ionicons name="arrow-back" size={20} color="#6f87ab" />
+              <Ionicons name="arrow-back" size={20} color="#6377b5" />
             </Pressable>
           </View>
 
@@ -192,7 +192,7 @@ export default function CreateStaffScreen() {
 
               {submitError ? (
                 <View className="flex-row items-start gap-2 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 dark:border-rose-500/30 dark:bg-rose-500/10">
-                  <Ionicons name="alert-circle" size={18} color="#e11d48" />
+                  <Ionicons name="alert-circle" size={18} color="#e0405a" />
                   <Text className="flex-1 text-sm text-rose-700 dark:text-rose-300">
                     {submitError}
                   </Text>
@@ -212,7 +212,7 @@ export default function CreateStaffScreen() {
           </View>
 
           <View className="mt-4 flex-row items-start gap-2 rounded-2xl border border-brand-100 bg-brand-50 px-4 py-3 dark:border-brand-500/20 dark:bg-brand-500/10">
-            <Ionicons name="information-circle-outline" size={18} color="#1d6af0" />
+            <Ionicons name="information-circle-outline" size={18} color="#4267f2" />
             <Text className="flex-1 text-xs leading-5 text-brand-700 dark:text-brand-200">
               El conserje podrá iniciar sesión de inmediato con el email y la contraseña indicados.
             </Text>

@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react';
-import { Alert } from 'react-native';
+import { Alert, Platform } from 'react-native';
 import { getApiErrorMessage } from '@/api/axios';
 
 type Confirm = { title: string; message: string; confirmLabel: string; destructive?: boolean };
@@ -26,6 +26,12 @@ export function useRowAction() {
     };
 
     if (!confirm) return execute();
+
+    // react-native-web no implementa Alert.alert: se usa el diálogo del navegador.
+    if (Platform.OS === 'web') {
+      if (globalThis.confirm(`${confirm.title}\n\n${confirm.message}`)) return execute();
+      return;
+    }
 
     Alert.alert(confirm.title, confirm.message, [
       { text: 'Cancelar', style: 'cancel' },

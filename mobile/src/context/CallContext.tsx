@@ -20,7 +20,9 @@ type CallReason = { visitId?: number | null; correspondenceId?: number | null };
 
 export type CallTarget =
   | ({ kind: 'user'; email: string; name: string; apartment?: string | null } & CallReason)
-  | ({ kind: 'apartment'; apartmentId: number; name: string; apartment: string } & CallReason);
+  | ({ kind: 'apartment'; apartmentId: number; name: string; apartment: string } & CallReason)
+  /** Residente → portería: timbra a todo el personal conectado (`/app/call.portal`). */
+  | { kind: 'portal'; name: string; apartment?: null };
 
 export type CallState = {
   phase: CallPhase;
@@ -180,7 +182,9 @@ export function CallProvider({ children }: { children: React.ReactNode }) {
       }
 
       const sent =
-        target.kind === 'user'
+        target.kind === 'portal'
+          ? send('/app/call.portal', { callId })
+          : target.kind === 'user'
           ? send('/app/call.invite', {
               callId,
               targetEmail: target.email,

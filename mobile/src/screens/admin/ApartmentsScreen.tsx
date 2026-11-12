@@ -93,7 +93,7 @@ function ApartmentCard({
         <Text className="text-sm font-bold text-ink-800 dark:text-ink-100">
           {expanded ? 'Ocultar residentes' : `Ver residentes (${residents.length})`}
         </Text>
-        <Ionicons name={expanded ? 'chevron-up' : 'chevron-down'} size={18} color="#526b8e" />
+        <Ionicons name={expanded ? 'chevron-up' : 'chevron-down'} size={18} color="#4a5c98" />
       </Pressable>
 
       {expanded ? (
@@ -376,7 +376,7 @@ export default function ApartmentsScreen() {
                     onPress={() => goBack('/admin/more')}
                     className="h-12 w-12 items-center justify-center rounded-full bg-ink-100 active:opacity-70 dark:bg-ink-800"
                   >
-                    <Ionicons name="arrow-back" size={22} color="#526b8e" />
+                    <Ionicons name="arrow-back" size={22} color="#4a5c98" />
                   </Pressable>
                   <Button title="Nuevo" icon="add" size="lg" onPress={openCreate} />
                 </>

@@ -6,6 +6,7 @@ import { callsApi } from '@/api/calls';
 import { correspondenceApi } from '@/api/correspondence';
 import { visitsApi } from '@/api/visits';
 import { CorrespondenceFormSheet } from '@/components/concierge/CorrespondenceFormSheet';
+import { ScanVisitSheet } from '@/components/concierge/ScanVisitSheet';
 import { VisitFormSheet } from '@/components/concierge/VisitFormSheet';
 import { ProfileActions } from '@/components/shared/ProfileActions';
 import { ActionTile } from '@/components/shared/ActionTile';
@@ -16,6 +17,7 @@ import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { ErrorBanner } from '@/components/ui/ErrorBanner';
+import { IconButton } from '@/components/ui/IconButton';
 import { Screen } from '@/components/ui/Screen';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { SearchBar } from '@/components/ui/SearchBar';
@@ -41,6 +43,7 @@ export default function ConciergeDashboardScreen() {
   const { isTablet, gutter } = useResponsive();
   const [visitForm, setVisitForm] = useState(false);
   const [mailForm, setMailForm] = useState(false);
+  const [scanOpen, setScanOpen] = useState(false);
   const [query, setQuery] = useState('');
 
   const loader = useCallback(async () => {
@@ -111,7 +114,7 @@ export default function ConciergeDashboardScreen() {
         const meta = correspondenceStatusMeta[item.status];
         return (
           <View key={item.id} className="flex-row items-center gap-3 border-t border-ink-100 py-3 dark:border-ink-800">
-            <Ionicons name={correspondenceTypeMeta[item.type].icon} size={20} color="#b45309" />
+            <Ionicons name={correspondenceTypeMeta[item.type].icon} size={20} color="#e2880e" />
             <View className="flex-1">
               <Text className="text-[15px] font-bold text-ink-950 dark:text-white" numberOfLines={1}>
                 {item.apartmentIdentifier} · {item.description || correspondenceTypeMeta[item.type].label}
@@ -157,13 +160,18 @@ export default function ConciergeDashboardScreen() {
       <ScrollView
         contentContainerStyle={{ padding: gutter, paddingBottom: 40, gap: 18 }}
         keyboardShouldPersistTaps="handled"
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor="#1d6af0" />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor="#4267f2" />}
       >
         <ScreenHeader
           eyebrow={formatLongDate()}
           title={`Hola, ${user?.firstName ?? 'portería'}`}
           subtitle="Conserjería · Panel de control"
-          right={<ProfileActions />}
+          right={
+            <>
+              <IconButton icon="qr-code" label="Escanear QR de visita" onPress={() => setScanOpen(true)} />
+              <ProfileActions />
+            </>
+          }
         />
 
         {error ? <ErrorBanner message={error} onRetry={refresh} /> : null}
@@ -172,10 +180,18 @@ export default function ConciergeDashboardScreen() {
           <ActionTile label="Registrar visita" hint="Entrada de visitantes" icon="person-add" onPress={() => setVisitForm(true)} />
           <ActionTile label="Registrar entrega" hint="Paquetes y correspondencia" icon="cube" tone="navy" onPress={() => setMailForm(true)} />
           <ActionTile label="Llamar" hint="Apartamento o residente" icon="call" tone="navy" onPress={() => router.push('/concierge/residents')} />
-          <ActionTile label="Emergencias" hint="Historial y resolución" icon="shield-checkmark" tone="neutral" onPress={() => router.push('/concierge/emergencies')} />
+          <EmergencyButton historyPath="/concierge/emergencies">
+            {({ onPress, active }) => (
+              <ActionTile
+                label={active ? 'Emergencia activa' : 'Emergencia'}
+                hint={active ? 'Toca para ver la alerta' : 'Activar alerta general'}
+                icon="warning"
+                tone="danger"
+                onPress={onPress}
+              />
+            )}
+          </EmergencyButton>
         </View>
-
-        <EmergencyButton />
 
         <View className="flex-row flex-wrap gap-2">
           <StatTile compact label="Visitas activas" value={data?.visits.length ?? '—'} icon="people" onPress={() => router.push('/concierge/visits')} />
@@ -183,7 +199,7 @@ export default function ConciergeDashboardScreen() {
           <StatTile compact label="Sin leer" value={stats.unread} icon="mail-unread" tone="rose" onPress={() => router.push('/concierge/mailbox')} />
         </View>
 
-        {loading && !data ? <ActivityIndicator size="large" color="#1d6af0" /> : null}
+        {loading && !data ? <ActivityIndicator size="large" color="#4267f2" /> : null}
 
         {isTablet ? (
           <View className="flex-row items-start gap-4">
@@ -203,6 +219,7 @@ export default function ConciergeDashboardScreen() {
       </ScrollView>
 
       <VisitFormSheet visible={visitForm} onClose={() => setVisitForm(false)} onCreated={() => void reload()} />
+      <ScanVisitSheet visible={scanOpen} onClose={() => setScanOpen(false)} onCheckedIn={() => void reload()} />
       <CorrespondenceFormSheet visible={mailForm} onClose={() => setMailForm(false)} onCreated={() => void reload()} />
     </Screen>
   );

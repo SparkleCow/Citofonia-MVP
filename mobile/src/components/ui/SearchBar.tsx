@@ -14,13 +14,13 @@ export function SearchBar({ value, onChangeText, placeholder = 'Buscar...' }: Se
 
   return (
     <View className="flex-row items-center gap-2.5 rounded-2xl border border-ink-200 bg-white px-4 dark:border-ink-800 dark:bg-ink-900">
-      <Ionicons name="search" size={19} color={isDark ? '#6f87ab' : '#93a8c7'} />
+      <Ionicons name="search" size={19} color={isDark ? '#6377b5' : '#8496cf'} />
       <TextInput
         className="min-h-[50px] flex-1 text-[15px] text-ink-900 dark:text-ink-50"
         value={value}
         onChangeText={onChangeText}
         placeholder={placeholder}
-        placeholderTextColor={isDark ? '#526b8e' : '#93a8c7'}
+        placeholderTextColor={isDark ? '#4a5c98' : '#8496cf'}
         autoCapitalize="none"
         autoCorrect={false}
         returnKeyType="search"
@@ -32,7 +32,7 @@ export function SearchBar({ value, onChangeText, placeholder = 'Buscar...' }: Se
           hitSlop={10}
           onPress={() => onChangeText('')}
         >
-          <Ionicons name="close-circle" size={19} color={isDark ? '#526b8e' : '#93a8c7'} />
+          <Ionicons name="close-circle" size={19} color={isDark ? '#4a5c98' : '#8496cf'} />
         </Pressable>
       ) : null}
     </View>

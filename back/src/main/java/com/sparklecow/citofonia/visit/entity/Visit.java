@@ -87,6 +87,13 @@ public class Visit extends BaseEntity {
     @Column(nullable = false, length = 160)
     private String registeredByEmail;
 
+    /** Codigo de acceso (QR) de una visita preautorizada; null en visitas anotadas en porteria. */
+    @Column(length = 16, unique = true)
+    private String accessCode;
+
+    /** Fecha y hora estimadas de llegada de una visita preautorizada. */
+    private Instant expectedAt;
+
     public Visit(Apartment apartment, String visitorName, String visitorDocument, String visitorPhone,
                  String visitorCompany, String notes, Instant entryAt, String registeredByEmail) {
         this.apartment = apartment;

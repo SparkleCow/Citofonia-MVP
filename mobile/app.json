@@ -6,12 +6,22 @@
     "version": "1.0.0",
     "orientation": "default",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.sparklecow.citofonia"
     },
     "android": {
-      "supportsTablet": true
+      "package": "com.sparklecow.citofonia",
+      "versionCode": 1,
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/android-icon-foreground.png",
+        "backgroundImage": "./assets/images/android-icon-background.png",
+        "monochromeImage": "./assets/images/android-icon-monochrome.png",
+        "backgroundColor": "#090d24"
+      },
+      "permissions": [
+        "android.permission.VIBRATE"
+      ]
     },
     "web": {
       "bundler": "metro"
@@ -36,9 +46,21 @@
       [
         "expo-notifications",
         {
-          "color": "#1854dc"
+          "color": "#2f4de0"
         }
-      ]
-    ]
+      ],
+      "expo-sharing",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Citofonía Fácil usa la cámara para escanear el código QR de las visitas autorizadas.",
+          "recordAudioAndroid": false
+        }
+      ],
+      "expo-font",
+      "./plugins/withCleartextTraffic",
+      "./plugins/withWebrtcProguard"
+    ],
+    "icon": "./assets/images/icon.png"
   }
 }

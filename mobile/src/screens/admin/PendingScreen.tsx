@@ -143,7 +143,7 @@ export default function PendingScreen() {
                   onPress={() => goBack('/admin/more')}
                   className="h-12 w-12 items-center justify-center rounded-full bg-ink-100 active:opacity-70 dark:bg-ink-800"
                 >
-                  <Ionicons name="arrow-back" size={22} color="#526b8e" />
+                  <Ionicons name="arrow-back" size={22} color="#4a5c98" />
                 </Pressable>
               }
             />
@@ -152,7 +152,7 @@ export default function PendingScreen() {
             </Text>
             {notice ? (
               <View className="flex-row items-center gap-2 rounded-2xl border border-emerald-300 bg-emerald-50 px-4 py-3 dark:border-emerald-500/40 dark:bg-emerald-500/10">
-                <Ionicons name="checkmark-circle" size={20} color="#047857" />
+                <Ionicons name="checkmark-circle" size={20} color="#12a372" />
                 <Text className="flex-1 text-sm font-semibold text-emerald-900 dark:text-emerald-200">{notice}</Text>
               </View>
             ) : null}

@@ -29,7 +29,7 @@ function BackButton({ onPress }: { onPress: () => void }) {
       onPress={onPress}
       className="h-12 w-12 items-center justify-center rounded-full bg-ink-100 active:opacity-70 dark:bg-ink-800"
     >
-      <Ionicons name="arrow-back" size={22} color="#526b8e" />
+      <Ionicons name="arrow-back" size={22} color="#4a5c98" />
     </Pressable>
   );
 }
@@ -109,7 +109,7 @@ export function MailboxCenter({ eyebrow, showBack = false }: MailboxCenterProps)
           <ThreadView key={person.id} person={person} canSend={caps.canSend} />
         ) : (
           <View className="flex-1 items-center justify-center bg-white p-10 dark:bg-ink-900">
-            <Ionicons name="chatbubbles-outline" size={48} color="#93a8c7" />
+            <Ionicons name="chatbubbles-outline" size={48} color="#8496cf" />
             <Text className="mt-3 text-center text-base font-semibold text-ink-600 dark:text-ink-300">
               Elige Conserjería o un apartamento y después una persona
             </Text>

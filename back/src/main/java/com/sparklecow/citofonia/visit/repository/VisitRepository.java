@@ -24,6 +24,9 @@ public interface VisitRepository extends JpaRepository<Visit, Long> {
     /** Visitas de una vivienda, de la mas reciente a la mas antigua. */
     Page<Visit> findAllByApartmentIdOrderByEntryAtDesc(Long apartmentId, Pageable pageable);
 
+    /** Visita preautorizada a la que pertenece un codigo de acceso (QR). */
+    java.util.Optional<Visit> findByAccessCode(String accessCode);
+
     /** Historial completo de visitas de una vivienda. */
     List<Visit> findAllByApartmentIdOrderByEntryAtDesc(Long apartmentId);
 }

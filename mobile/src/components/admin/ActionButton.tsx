@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
 import { Pressable, Text, View } from 'react-native';
 
-type Tone = 'brand' | 'navy' | 'amber';
+type Tone = 'brand' | 'navy' | 'amber' | 'rose';
 
 type ActionButtonProps = {
   label: string;
@@ -14,14 +14,16 @@ type ActionButtonProps = {
 
 /** Botones de acción: relleno sólido, sombra, chevron y respuesta al toque. */
 const fills: Record<Tone, string> = {
-  brand: 'bg-brand-700',
-  navy: 'bg-ink-800 dark:bg-ink-700',
+  brand: 'bg-brand-600 border border-brand-400',
+  navy: 'bg-ink-800 border border-ink-500 dark:bg-ink-700',
   /** Solo para avisos que requieren atención (p. ej. pendientes). */
-  amber: 'bg-amber-700',
+  amber: 'bg-amber-700 border border-amber-500',
+  /** Solo para la alerta de emergencia. */
+  rose: 'bg-rose-600 border border-rose-400',
 };
 
 const shadow = {
-  shadowColor: '#0b1020',
+  shadowColor: '#090d24',
   shadowOffset: { width: 0, height: 5 },
   shadowOpacity: 0.28,
   shadowRadius: 8,

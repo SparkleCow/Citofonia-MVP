@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/Badge';
 import { InfoRow } from '@/components/ui/InfoRow';
 import { formatDateTime, relativeTime } from '@/lib/format';
 import { visitStatusMeta } from '@/lib/status';
+import { isPassExpired } from '@/lib/visitPass';
 import type { VisitResponse } from '@/types';
 
 type VisitCardProps = {
@@ -16,20 +17,31 @@ type VisitCardProps = {
 };
 
 export function VisitCard({ visit, showApartment = true, actions }: VisitCardProps) {
-  const status = visitStatusMeta[visit.status];
+  const status = isPassExpired(visit)
+    ? ({ label: 'Caducada', tone: 'neutral', icon: 'time-outline' } as const)
+    : visit.status === 'REJECTED' && visit.accessCode
+      ? ({ label: 'Anulada', tone: 'neutral', icon: 'close-circle-outline' } as const)
+      : visitStatusMeta[visit.status];
+  // Una visita preautorizada aún no ha entrado: su `entryAt` es la llegada estimada.
+  const preauthorized = visit.status === 'PREAUTHORIZED';
+  // Autorización anulada por el residente: tampoco llegó a entrar.
+  const cancelled = visit.status === 'REJECTED' && !!visit.accessCode;
+  const neverEntered = preauthorized || cancelled;
   return (
-    <View className="flex-1 rounded-3xl border border-ink-200 bg-white p-4 dark:border-ink-800 dark:bg-ink-900">
+    <View className="flex-1 rounded-3xl bg-ink-100 dark:bg-ink-900 p-4">
       <View className="flex-row items-start gap-3">
         <View className="h-12 w-12 items-center justify-center rounded-2xl bg-brand-100 dark:bg-brand-500/20">
-          <Ionicons name="person-outline" size={22} color="#1d6af0" />
+          <Ionicons name="person-outline" size={22} color="#4267f2" />
         </View>
         <View className="flex-1">
-          <Text className="text-[17px] font-bold text-ink-950 dark:text-white" numberOfLines={1}>
+          <Text className="text-[17px] font-bold md:text-[19px] text-ink-950 dark:text-white" numberOfLines={1}>
             {visit.visitorName}
           </Text>
-          <Text className="mt-0.5 text-[13px] text-ink-600 dark:text-ink-300">
+          <Text className="mt-0.5 text-[13px] text-ink-600 md:text-[15px] dark:text-ink-300">
             {showApartment ? `${visit.apartmentIdentifier} · ` : ''}
-            {relativeTime(visit.entryAt ?? visit.createdAt)}
+            {neverEntered
+              ? `${preauthorized ? 'Llega' : 'Prevista'} ${formatDateTime(visit.expectedAt ?? visit.entryAt)}`
+              : relativeTime(visit.entryAt ?? visit.createdAt)}
           </Text>
         </View>
         <Badge label={status.label} tone={status.tone} icon={status.icon} />
@@ -40,7 +52,7 @@ export function VisitCard({ visit, showApartment = true, actions }: VisitCardPro
         <InfoRow icon="card-outline" label="Cédula" value={visit.visitorDocument} />
         <InfoRow icon="briefcase-outline" label="Empresa" value={visit.visitorCompany} />
         <InfoRow icon="call-outline" label="Teléfono" value={visit.visitorPhone} />
-        <InfoRow icon="log-in-outline" label="Entrada" value={visit.entryAt ? formatDateTime(visit.entryAt) : null} />
+        <InfoRow icon="log-in-outline" label="Entrada" value={!neverEntered && visit.entryAt ? formatDateTime(visit.entryAt) : null} />
         <InfoRow icon="log-out-outline" label="Salida" value={visit.exitAt ? formatDateTime(visit.exitAt) : null} />
         {visit.notes ? (
           <Text className="mt-1 text-[13px] italic text-ink-700 dark:text-ink-200">“{visit.notes}”</Text>

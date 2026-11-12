@@ -10,7 +10,9 @@ import com.sparklecow.citofonia.mail.service.MailService;
 import com.sparklecow.citofonia.user.entity.User;
 import com.sparklecow.citofonia.user.enums.RoleName;
 import com.sparklecow.citofonia.user.repository.UserRepository;
+import com.sparklecow.citofonia.common.exception.ConflictException;
 import com.sparklecow.citofonia.visit.dto.VisitNotifyRequest;
+import com.sparklecow.citofonia.visit.dto.VisitPreauthorizeRequest;
 import com.sparklecow.citofonia.visit.dto.VisitRecipientResponse;
 import com.sparklecow.citofonia.visit.dto.VisitRequest;
 import com.sparklecow.citofonia.visit.dto.VisitResponse;
@@ -18,11 +20,14 @@ import com.sparklecow.citofonia.visit.dto.VisitStatusRequest;
 import com.sparklecow.citofonia.visit.entity.Visit;
 import com.sparklecow.citofonia.visit.entity.VisitStatus;
 import com.sparklecow.citofonia.visit.repository.VisitRepository;
+import java.security.SecureRandom;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -49,6 +54,133 @@ public class VisitService {
     private final ApartmentRepository apartmentRepository;
     private final UserRepository userRepository;
     private final MailService mailService;
+
+    /** Alfabeto sin caracteres ambiguos (0/O, 1/I/L) para poder dictar el codigo. */
+    private static final String CODE_ALPHABET = "23456789ABCDEFGHJKMNPQRSTUVWXYZ";
+    private static final int CODE_LENGTH = 12;
+    /** Antelacion maxima con la que se puede anunciar una visita. */
+    static final Duration MAX_ADVANCE = Duration.ofDays(30);
+    /** Margen tras la hora estimada durante el que el codigo sigue siendo valido. */
+    static final Duration CODE_GRACE = Duration.ofHours(12);
+    /** Tolerancia para una hora estimada "ahora mismo" (desfase de reloj del movil). */
+    private static final Duration PAST_TOLERANCE = Duration.ofMinutes(15);
+
+    private final SecureRandom random = new SecureRandom();
+
+    /**
+     * Un residente anuncia una visita para su vivienda. Devuelve la visita con el
+     * codigo de acceso que el visitante presentara (como QR) en porteria.
+     */
+    @Transactional
+    public VisitResponse preauthorize(VisitPreauthorizeRequest request, User resident) {
+        if (!isResident(resident) || resident.getApartment() == null || !resident.isOccupiesApartment()) {
+            throw new ForbiddenException("Solo quienes residen en una vivienda pueden autorizar visitas");
+        }
+        Instant now = Instant.now();
+        if (request.expectedAt().isBefore(now.minus(PAST_TOLERANCE))) {
+            throw new BadRequestException("La fecha y hora estimadas no pueden estar en el pasado");
+        }
+        if (request.expectedAt().isAfter(now.plus(MAX_ADVANCE))) {
+            throw new BadRequestException("Solo puedes autorizar visitas con hasta 30 dias de antelacion");
+        }
+        Visit visit = new Visit(
+                resident.getApartment(),
+                request.visitorName().trim(),
+                request.visitorDocument(),
+                null,
+                null,
+                null,
+                request.expectedAt(),
+                resident.getEmail());
+        visit.setReason(normalize(request.reason()));
+        visit.setExpectedAt(request.expectedAt());
+        visit.setStatus(VisitStatus.PREAUTHORIZED);
+        visit.setAccessCode(newAccessCode());
+        visit = visitRepository.save(visit);
+        log.info("Visita {} preautorizada por {} para {}",
+                visit.getId(), resident.getEmail(), resident.getApartment().getIdentifier());
+        return VisitResponse.from(visit);
+    }
+
+    /** El residente anula una visita que habia anunciado y que aun no ha llegado. */
+    @Transactional
+    public VisitResponse cancelPreauthorization(Long visitId, User resident) {
+        Visit visit = findVisit(visitId);
+        if (!isResident(resident) || !livesIn(resident, visit.getApartment())) {
+            throw new ForbiddenException("No puedes anular visitas de otra vivienda");
+        }
+        if (visit.getStatus() != VisitStatus.PREAUTHORIZED) {
+            throw new ConflictException("Solo se pueden anular visitas preautorizadas que no han ingresado");
+        }
+        visit.setStatus(VisitStatus.REJECTED);
+        visitRepository.save(visit);
+        log.info("Preautorizacion de la visita {} anulada por {}", visit.getId(), resident.getEmail());
+        return VisitResponse.from(visit);
+    }
+
+    /** Porteria consulta la visita a la que pertenece un codigo (QR) sin modificarla. */
+    @Transactional(readOnly = true)
+    public VisitResponse findByAccessCode(String code, User actor) {
+        requireStaff(actor);
+        return VisitResponse.from(findByCode(code));
+    }
+
+    /**
+     * Porteria registra el ingreso de una visita preautorizada. El codigo es de
+     * un solo uso y caduca {@link #CODE_GRACE} despues de la hora estimada. Se
+     * avisa por buzon a quienes residen en la vivienda.
+     */
+    @Transactional
+    public VisitResponse checkIn(String code, User actor) {
+        requireStaff(actor);
+        Visit visit = findByCode(code);
+        if (visit.getStatus() == VisitStatus.REJECTED) {
+            throw new ConflictException("El residente anulo esta autorizacion");
+        }
+        if (visit.getStatus() != VisitStatus.PREAUTHORIZED) {
+            throw new ConflictException("Este codigo ya fue utilizado");
+        }
+        Instant now = Instant.now();
+        if (visit.getExpectedAt() != null && now.isAfter(visit.getExpectedAt().plus(CODE_GRACE))) {
+            throw new ConflictException("El codigo ha caducado");
+        }
+        visit.setStatus(VisitStatus.ADMITTED);
+        visit.setEntryAt(now);
+        List<User> residents = userRepository.findResidentsLivingInApartment(visit.getApartment().getId());
+        if (!residents.isEmpty()) {
+            mailService.sendTo(
+                    residents.stream().map(User::getId).toList(),
+                    "Tu visita ha llegado: " + visit.getVisitorName(),
+                    visit.getVisitorName() + " ha ingresado con la autorizacion de tu vivienda ("
+                            + visit.getApartment().getIdentifier() + ").\n\nDocumento: "
+                            + visit.getVisitorDocument() + "\n\nRegistrado por consergeria.",
+                    actor);
+            visit.setNotifiedAt(now);
+            visit.setNotifiedTo(joinEmails(residents));
+        }
+        visitRepository.save(visit);
+        log.info("Ingreso de la visita preautorizada {} registrado por {}", visit.getId(), actor.getEmail());
+        return VisitResponse.from(visit);
+    }
+
+    private Visit findByCode(String code) {
+        String normalized = code == null ? "" : code.trim().toUpperCase(Locale.ROOT);
+        return visitRepository.findByAccessCode(normalized)
+                .orElseThrow(() -> new NotFoundException("Codigo de visita no valido"));
+    }
+
+    private String newAccessCode() {
+        for (int attempt = 0; attempt < 5; attempt++) {
+            StringBuilder code = new StringBuilder(CODE_LENGTH);
+            for (int i = 0; i < CODE_LENGTH; i++) {
+                code.append(CODE_ALPHABET.charAt(random.nextInt(CODE_ALPHABET.length())));
+            }
+            if (visitRepository.findByAccessCode(code.toString()).isEmpty()) {
+                return code.toString();
+            }
+        }
+        throw new ConflictException("No se pudo generar el codigo de acceso; intentalo de nuevo");
+    }
 
     /** Anota una visita. Solo consergeria o administracion. */
     @Transactional

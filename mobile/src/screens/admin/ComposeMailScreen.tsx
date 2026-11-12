@@ -289,7 +289,7 @@ export default function ComposeMailScreen() {
         fullWidth
       />
       <View className="flex-row items-start gap-2 rounded-2xl bg-brand-50 px-4 py-3 dark:bg-brand-500/10">
-        <Ionicons name="flash-outline" size={18} color="#1854dc" />
+        <Ionicons name="flash-outline" size={18} color="#4267f2" />
         <Text className="flex-1 text-xs leading-5 text-brand-800 dark:text-brand-200">
           Llega al buzón de cada destinatario y, si tiene la app abierta, se muestra al instante por WebSocket.
         </Text>
@@ -316,7 +316,7 @@ export default function ComposeMailScreen() {
                 onPress={() => goBack('/admin/more')}
                 className="h-12 w-12 items-center justify-center rounded-full bg-ink-100 active:opacity-70 dark:bg-ink-800"
               >
-                <Ionicons name="arrow-back" size={22} color="#526b8e" />
+                <Ionicons name="arrow-back" size={22} color="#4a5c98" />
               </Pressable>
             }
           />

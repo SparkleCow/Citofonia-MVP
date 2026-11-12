@@ -11,6 +11,7 @@ import type {
 type IconName = keyof typeof Ionicons.glyphMap;
 
 export const visitStatusMeta: Record<VisitStatus, { label: string; tone: BadgeTone; icon: IconName }> = {
+  PREAUTHORIZED: { label: 'Preautorizada', tone: 'violet', icon: 'qr-code-outline' },
   PENDING: { label: 'Pendiente', tone: 'warning', icon: 'hourglass-outline' },
   NOTIFIED: { label: 'Avisada', tone: 'info', icon: 'notifications-outline' },
   ADMITTED: { label: 'Autorizada', tone: 'success', icon: 'checkmark-circle-outline' },
@@ -26,6 +27,17 @@ export const correspondenceStatusMeta: Record<
   NOTIFIED: { label: 'Avisada', tone: 'info', icon: 'notifications-outline' },
   DELIVERED: { label: 'Entregada', tone: 'success', icon: 'checkmark-done-outline' },
   RETURNED: { label: 'Devuelta', tone: 'danger', icon: 'return-up-back-outline' },
+};
+
+/** Lo que ve el residente: su paquete está en portería o ya lo tiene. */
+export const residentCorrespondenceStatusMeta: Record<
+  CorrespondenceStatus,
+  { label: string; tone: BadgeTone; icon: IconName }
+> = {
+  PENDING: { label: 'En recepción', tone: 'warning', icon: 'file-tray-full-outline' },
+  NOTIFIED: { label: 'En recepción', tone: 'warning', icon: 'file-tray-full-outline' },
+  DELIVERED: { label: 'Entregado', tone: 'success', icon: 'checkmark-done-outline' },
+  RETURNED: { label: 'Devuelto', tone: 'danger', icon: 'return-up-back-outline' },
 };
 
 export const correspondenceTypeMeta: Record<CorrespondenceType, { label: string; icon: IconName }> = {

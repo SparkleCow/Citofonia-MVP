@@ -1,6 +1,7 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import { View } from 'react-native';
 import { visitsApi } from '@/api/visits';
+import { ScanVisitSheet } from '@/components/concierge/ScanVisitSheet';
 import { VisitFormSheet } from '@/components/concierge/VisitFormSheet';
 import { RecipientPickerSheet } from '@/components/shared/RecipientPickerSheet';
 import { ResponsiveList } from '@/components/shared/ResponsiveList';
@@ -15,9 +16,10 @@ import { useCall } from '@/context/CallContext';
 import { useAsyncResource } from '@/hooks/useAsyncResource';
 import { useRowAction } from '@/hooks/useRowAction';
 import { OPEN_VISIT_STATUSES } from '@/lib/status';
+import { isPassExpired } from '@/lib/visitPass';
 import type { VisitResponse } from '@/types';
 
-type Filter = 'OPEN' | 'PENDING' | 'ADMITTED' | 'ALL';
+type Filter = 'OPEN' | 'EXPECTED' | 'PENDING' | 'ADMITTED' | 'ALL';
 
 export default function ConciergeVisitsScreen() {
   const loader = useCallback(() => visitsApi.list({ size: 100 }).then((page) => page.content), []);
@@ -37,6 +39,7 @@ export default function ConciergeVisitsScreen() {
   const [filter, setFilter] = useState<Filter>('OPEN');
   const [query, setQuery] = useState('');
   const [formOpen, setFormOpen] = useState(false);
+  const [scanOpen, setScanOpen] = useState(false);
   const [notifyTarget, setNotifyTarget] = useState<VisitResponse | null>(null);
 
   const visits = useMemo(() => data ?? [], [data]);
@@ -47,6 +50,7 @@ export default function ConciergeVisitsScreen() {
   const counts = useMemo(
     () => ({
       OPEN: visits.filter((v) => OPEN_VISIT_STATUSES.includes(v.status)).length,
+      EXPECTED: visits.filter((v) => v.status === 'PREAUTHORIZED' && !isPassExpired(v)).length,
       PENDING: visits.filter((v) => v.status === 'PENDING' || v.status === 'NOTIFIED').length,
       ADMITTED: visits.filter((v) => v.status === 'ADMITTED').length,
       ALL: visits.length,
@@ -60,6 +64,7 @@ export default function ConciergeVisitsScreen() {
       const byStatus =
         filter === 'ALL' ||
         (filter === 'OPEN' && OPEN_VISIT_STATUSES.includes(visit.status)) ||
+        (filter === 'EXPECTED' && visit.status === 'PREAUTHORIZED' && !isPassExpired(visit)) ||
         (filter === 'PENDING' && (visit.status === 'PENDING' || visit.status === 'NOTIFIED')) ||
         (filter === 'ADMITTED' && visit.status === 'ADMITTED');
       if (!byStatus) return false;
@@ -90,9 +95,33 @@ export default function ConciergeVisitsScreen() {
         : undefined,
     );
 
+  // Visitante preautorizado que llega sin el QR a mano: se identifica con su cédula.
+  const checkIn = (visit: VisitResponse) =>
+    run(
+      `${visit.id}-CHECKIN`,
+      async () => replace(await visitsApi.checkIn(visit.accessCode ?? '')),
+      {
+        title: 'Registrar ingreso',
+        message: `¿Verificaste la cédula ${visit.visitorDocument ?? ''} de ${visit.visitorName}?`,
+        confirmLabel: 'Registrar',
+      },
+    );
+
   const renderActions = (visit: VisitResponse) => {
     const busy = (s: string) => busyKey === `${visit.id}-${s}`;
     switch (visit.status) {
+      case 'PREAUTHORIZED':
+        if (isPassExpired(visit)) return null;
+        return (
+          <Button
+            title="Registrar ingreso"
+            icon="log-in-outline"
+            variant="success"
+            loading={busy('CHECKIN')}
+            onPress={() => checkIn(visit)}
+            fullWidth
+          />
+        );
       case 'PENDING':
       case 'NOTIFIED':
         return (
@@ -142,7 +171,12 @@ export default function ConciergeVisitsScreen() {
               eyebrow="Portería"
               title="Visitas"
               subtitle={`${counts.OPEN} en curso`}
-              right={<Button title="Nueva" icon="add" size="lg" onPress={() => setFormOpen(true)} />}
+              right={
+                <>
+                  <Button title="QR" icon="qr-code" variant="secondary" size="lg" onPress={() => setScanOpen(true)} />
+                  <Button title="Nueva" icon="add" size="lg" onPress={() => setFormOpen(true)} />
+                </>
+              }
             />
             <SearchBar value={query} onChangeText={setQuery} placeholder="Visitante, vivienda, documento..." />
             <FilterChips<Filter>
@@ -150,6 +184,7 @@ export default function ConciergeVisitsScreen() {
               onChange={setFilter}
               options={[
                 { key: 'OPEN', label: 'En curso', count: counts.OPEN },
+                { key: 'EXPECTED', label: 'Preautorizadas', count: counts.EXPECTED },
                 { key: 'PENDING', label: 'Por autorizar', count: counts.PENDING },
                 { key: 'ADMITTED', label: 'Dentro', count: counts.ADMITTED },
                 { key: 'ALL', label: 'Todas', count: counts.ALL },
@@ -170,6 +205,19 @@ export default function ConciergeVisitsScreen() {
           // Espera a que se cierre la hoja del formulario antes de abrir la de aviso (iOS).
           setTimeout(() => setNotifyTarget(visit), 400);
         }}
+      />
+
+      <ScanVisitSheet
+        visible={scanOpen}
+        onClose={() => setScanOpen(false)}
+        onCheckedIn={(visit) =>
+          setData((current) => {
+            const list = current ?? [];
+            return list.some((item) => item.id === visit.id)
+              ? list.map((item) => (item.id === visit.id ? visit : item))
+              : [visit, ...list];
+          })
+        }
       />
 
       <RecipientPickerSheet

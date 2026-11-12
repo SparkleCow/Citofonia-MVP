@@ -9,6 +9,12 @@ package com.sparklecow.citofonia.visit.entity;
  */
 public enum VisitStatus {
 
+    /**
+     * Visita anunciada de antemano por un residente: aun no ha llegado. El
+     * visitante presenta su codigo (QR) en porteria para registrar el ingreso.
+     */
+    PREAUTHORIZED,
+
     /** Visitante anotado y a la espera de avisar al resident. */
     PENDING,
 

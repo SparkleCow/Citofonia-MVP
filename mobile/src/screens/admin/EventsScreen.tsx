@@ -124,8 +124,8 @@ export default function EventsScreen() {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={() => load(true)}
-            tintColor="#3389fb"
-            colors={['#3389fb']}
+            tintColor="#4267f2"
+            colors={['#4267f2']}
           />
         }
         ListHeaderComponent={
@@ -155,7 +155,7 @@ export default function EventsScreen() {
                     <Ionicons
                       name={option.icon}
                       size={14}
-                      color={selected ? '#ffffff' : '#6f87ab'}
+                      color={selected ? '#ffffff' : '#6377b5'}
                     />
                     <Text
                       className={`text-xs font-bold ${
@@ -180,7 +180,7 @@ export default function EventsScreen() {
 
             {error ? (
               <View className="mt-3 flex-row items-start gap-2 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 dark:border-rose-500/30 dark:bg-rose-500/10">
-                <Ionicons name="cloud-offline-outline" size={18} color="#e11d48" />
+                <Ionicons name="cloud-offline-outline" size={18} color="#e0405a" />
                 <View className="flex-1">
                   <Text className="text-sm font-semibold text-rose-700 dark:text-rose-300">
                     No se pudo cargar el historial
@@ -197,7 +197,7 @@ export default function EventsScreen() {
         ListEmptyComponent={
           loading ? (
             <View className="items-center py-16">
-              <ActivityIndicator size="large" color="#3389fb" />
+              <ActivityIndicator size="large" color="#4267f2" />
               <Text className="mt-3 text-sm text-ink-500 dark:text-ink-400">Cargando historial...</Text>
             </View>
           ) : (
@@ -215,7 +215,7 @@ export default function EventsScreen() {
         ListFooterComponent={
           loadingMore ? (
             <View className="py-5">
-              <ActivityIndicator color="#3389fb" />
+              <ActivityIndicator color="#4267f2" />
             </View>
           ) : undefined
         }

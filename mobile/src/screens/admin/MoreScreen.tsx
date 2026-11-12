@@ -146,7 +146,7 @@ export default function MoreScreen() {
                   <Ionicons
                     name={icons[option]}
                     size={19}
-                    color={selected ? '#3389fb' : '#6f87ab'}
+                    color={selected ? '#4267f2' : '#6377b5'}
                   />
                   <Text
                     className={`text-xs font-semibold ${
@@ -175,7 +175,7 @@ export default function MoreScreen() {
               }`}
             >
               <View className="h-10 w-10 items-center justify-center rounded-2xl bg-ink-100 dark:bg-ink-800">
-                <Ionicons name={item.icon} size={19} color="#3389fb" />
+                <Ionicons name={item.icon} size={19} color="#4267f2" />
               </View>
               <View className="min-w-0 flex-1">
                 <Text className="text-sm font-semibold text-ink-900 dark:text-ink-50">{item.label}</Text>
@@ -185,7 +185,7 @@ export default function MoreScreen() {
                   </Text>
                 ) : null}
               </View>
-              <Ionicons name="chevron-forward" size={18} color="#93a8c7" />
+              <Ionicons name="chevron-forward" size={18} color="#8496cf" />
             </Pressable>
           ))}
         </Card>
@@ -200,7 +200,7 @@ export default function MoreScreen() {
             className="flex-row items-center gap-3 px-4 py-3.5 active:bg-rose-50 dark:active:bg-rose-500/10"
           >
             <View className="h-10 w-10 items-center justify-center rounded-2xl bg-rose-100 dark:bg-rose-500/20">
-              <Ionicons name="log-out-outline" size={19} color="#e11d48" />
+              <Ionicons name="log-out-outline" size={19} color="#e0405a" />
             </View>
             <View className="flex-1">
               <Text className="text-sm font-semibold text-rose-600 dark:text-rose-300">Cerrar sesión</Text>
@@ -208,7 +208,7 @@ export default function MoreScreen() {
                 Salir de este dispositivo de forma segura
               </Text>
             </View>
-            <Ionicons name="chevron-forward" size={18} color="#93a8c7" />
+            <Ionicons name="chevron-forward" size={18} color="#8496cf" />
           </Pressable>
         </Card>
 

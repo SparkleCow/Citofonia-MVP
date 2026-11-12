@@ -213,7 +213,7 @@ export interface UpdateUserPayload {
 
 /* ───────────── Visitas (VisitController) ───────────── */
 
-export type VisitStatus = 'PENDING' | 'NOTIFIED' | 'ADMITTED' | 'REJECTED' | 'CLOSED';
+export type VisitStatus = 'PREAUTHORIZED' | 'PENDING' | 'NOTIFIED' | 'ADMITTED' | 'REJECTED' | 'CLOSED';
 
 export interface VisitPayload {
   apartmentId: number;
@@ -244,6 +244,19 @@ export interface VisitResponse {
   notifiedTo: string[];
   registeredByEmail?: string | null;
   createdAt?: string | null;
+  /** Código de acceso (QR) de una visita preautorizada por un residente. */
+  accessCode?: string | null;
+  /** Llegada estimada de una visita preautorizada. */
+  expectedAt?: string | null;
+}
+
+/** `VisitPreauthorizeRequest`: visita que el residente anuncia para su vivienda. */
+export interface VisitPreauthorizePayload {
+  visitorName: string;
+  /** Solo dígitos (6–12). */
+  visitorDocument: string;
+  expectedAt: string;
+  reason?: string | null;
 }
 
 export interface VisitStatusPayload {
